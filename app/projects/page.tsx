@@ -9,6 +9,7 @@ import { Clock, DollarSign, Wrench, ArrowRight } from 'lucide-react';
 import { formatPrice } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { ProjectsBanner } from '@/components/content/platform-banners';
 
 type Project = Database['public']['Tables']['projects']['Row'];
 
@@ -33,9 +34,8 @@ export default function ProjectsPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-navy mb-2">Projects</h1>
-        <p className="text-muted-foreground">Explore student electronics and robotics projects with guides and component lists</p>
+      <div className="mb-8">
+        <ProjectsBanner />
       </div>
 
       {/* Filter */}

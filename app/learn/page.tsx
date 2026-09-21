@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Clock, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { LearnBanner } from '@/components/content/platform-banners';
 
 type Tutorial = Database['public']['Tables']['tutorials']['Row'];
 
@@ -32,9 +33,8 @@ export default function LearnPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-navy mb-2">Learn</h1>
-        <p className="text-muted-foreground">Expand your knowledge with our tutorials and guides</p>
+      <div className="mb-8">
+        <LearnBanner />
       </div>
 
       {/* Category filter */}
