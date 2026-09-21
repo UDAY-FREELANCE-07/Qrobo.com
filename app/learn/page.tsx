@@ -7,7 +7,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Clock, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { LearnBanner } from '@/components/content/platform-banners';
 
 type Tutorial = Database['public']['Tables']['tutorials']['Row'];
 
@@ -33,8 +32,8 @@ export default function LearnPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div className="mb-8">
-        <LearnBanner />
+      <div className="mb-8 overflow-hidden rounded-2xl shadow-sm">
+        <img src="/images/banners/image.png" alt="Learn. Build. Create." className="h-auto w-full" />
       </div>
 
       {/* Category filter */}

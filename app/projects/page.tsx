@@ -9,7 +9,6 @@ import { Clock, DollarSign, Wrench, ArrowRight } from 'lucide-react';
 import { formatPrice } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { ProjectsBanner } from '@/components/content/platform-banners';
 
 type Project = Database['public']['Tables']['projects']['Row'];
 
@@ -34,8 +33,8 @@ export default function ProjectsPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div className="mb-8">
-        <ProjectsBanner />
+      <div className="mb-8 overflow-hidden rounded-2xl shadow-sm">
+        <img src="/images/banners/image copy.png" alt="Projects" className="h-auto w-full" />
       </div>
 
       {/* Filter */}
