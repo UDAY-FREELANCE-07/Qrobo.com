@@ -1,0 +1,13 @@
+import { Router } from 'express';
+import { getHealth } from '../controllers/health.controller';
+import authRoutes from './auth.routes';
+
+const router = Router();
+
+// Health Check
+router.get('/health', getHealth);
+
+// Auth Routes
+router.use('/auth', authRoutes);
+
+export default router;

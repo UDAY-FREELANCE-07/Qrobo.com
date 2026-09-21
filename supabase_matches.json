@@ -1,0 +1,807 @@
+[
+  {
+    "file": "\\app\\account\\page.tsx",
+    "matches": [
+      {
+        "line": 8,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 9,
+        "content": "import type { Database } from '@/lib/supabase';"
+      },
+      {
+        "line": 42,
+        "content": "supabase"
+      },
+      {
+        "line": 47,
+        "content": "supabase"
+      },
+      {
+        "line": 51,
+        "content": "supabase"
+      },
+      {
+        "line": 72,
+        "content": "const { error } = await supabase"
+      },
+      {
+        "line": 289,
+        "content": "const { error } = await supabase.auth.updateUser({ password: newPassword });"
+      }
+    ]
+  },
+  {
+    "file": "\\app\\admin\\banners\\page.tsx",
+    "matches": [
+      {
+        "line": 4,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 5,
+        "content": "import type { Database } from '@/lib/supabase';"
+      },
+      {
+        "line": 30,
+        "content": "const { data } = await supabase.from('banners').select('*').order('sort_order');"
+      },
+      {
+        "line": 41,
+        "content": "await supabase.from('banners').update(data).eq('id', editing.id);"
+      },
+      {
+        "line": 44,
+        "content": "await supabase.from('banners').insert(data);"
+      },
+      {
+        "line": 53,
+        "content": "await supabase.from('banners').delete().eq('id', id);"
+      }
+    ]
+  },
+  {
+    "file": "\\app\\admin\\brands\\page.tsx",
+    "matches": [
+      {
+        "line": 4,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 5,
+        "content": "import type { Database } from '@/lib/supabase';"
+      },
+      {
+        "line": 24,
+        "content": "const { data } = await supabase.from('brands').select('*').order('name');"
+      },
+      {
+        "line": 35,
+        "content": "await supabase.from('brands').update(data).eq('id', editing.id);"
+      },
+      {
+        "line": 38,
+        "content": "await supabase.from('brands').insert(data);"
+      },
+      {
+        "line": 47,
+        "content": "const { error } = await supabase.from('brands').delete().eq('id', id);"
+      }
+    ]
+  },
+  {
+    "file": "\\app\\admin\\categories\\page.tsx",
+    "matches": [
+      {
+        "line": 4,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 5,
+        "content": "import type { Database } from '@/lib/supabase';"
+      },
+      {
+        "line": 25,
+        "content": "const { data } = await supabase.from('categories').select('*').order('sort_order');"
+      },
+      {
+        "line": 36,
+        "content": "const { error } = await supabase.from('categories').update(data).eq('id', editing.id);"
+      },
+      {
+        "line": 40,
+        "content": "const { error } = await supabase.from('categories').insert(data);"
+      },
+      {
+        "line": 50,
+        "content": "const { error } = await supabase.from('categories').delete().eq('id', id);"
+      }
+    ]
+  },
+  {
+    "file": "\\app\\admin\\coupons\\page.tsx",
+    "matches": [
+      {
+        "line": 4,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 5,
+        "content": "import type { Database } from '@/lib/supabase';"
+      },
+      {
+        "line": 30,
+        "content": "const { data } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });"
+      },
+      {
+        "line": 50,
+        "content": "await supabase.from('coupons').update(data).eq('id', editing.id);"
+      },
+      {
+        "line": 53,
+        "content": "await supabase.from('coupons').insert(data);"
+      },
+      {
+        "line": 62,
+        "content": "await supabase.from('coupons').delete().eq('id', id);"
+      }
+    ]
+  },
+  {
+    "file": "\\app\\admin\\customers\\page.tsx",
+    "matches": [
+      {
+        "line": 4,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 5,
+        "content": "import type { Database } from '@/lib/supabase';"
+      },
+      {
+        "line": 20,
+        "content": "supabase.from('profiles').select('*').order('created_at', { ascending: false }),"
+      },
+      {
+        "line": 21,
+        "content": "supabase.from('orders').select('user_id'),"
+      }
+    ]
+  },
+  {
+    "file": "\\app\\admin\\deals\\page.tsx",
+    "matches": [
+      {
+        "line": 4,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 5,
+        "content": "import type { Database } from '@/lib/supabase';"
+      },
+      {
+        "line": 30,
+        "content": "supabase.from('deals').select('*, product:products(*)').order('created_at', { ascending: false }),"
+      },
+      {
+        "line": 31,
+        "content": "supabase.from('products').select('*').eq('is_published', true).order('name'),"
+      },
+      {
+        "line": 45,
+        "content": "const { error } = await supabase.from('deals').insert({"
+      },
+      {
+        "line": 59,
+        "content": "await supabase.from('deals').delete().eq('id', id);"
+      }
+    ]
+  },
+  {
+    "file": "\\app\\admin\\layout.tsx",
+    "matches": [
+      {
+        "line": 7,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 44,
+        "content": "supabase"
+      }
+    ]
+  },
+  {
+    "file": "\\app\\admin\\orders\\page.tsx",
+    "matches": [
+      {
+        "line": 4,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 5,
+        "content": "import type { Database } from '@/lib/supabase';"
+      },
+      {
+        "line": 26,
+        "content": "const { data } = await supabase"
+      },
+      {
+        "line": 39,
+        "content": "const { error } = await supabase.from('orders').update({ status }).eq('id', id);"
+      }
+    ]
+  },
+  {
+    "file": "\\app\\admin\\page.tsx",
+    "matches": [
+      {
+        "line": 4,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 26,
+        "content": "supabase.from('orders').select('total, status').eq('payment_status', 'paid'),"
+      },
+      {
+        "line": 27,
+        "content": "supabase.from('products').select('id', { count: 'exact' }),"
+      },
+      {
+        "line": 28,
+        "content": "supabase.from('profiles').select('id', { count: 'exact' }),"
+      },
+      {
+        "line": 29,
+        "content": "supabase.from('products').select('id, name, stock').lt('stock', 10).limit(5),"
+      },
+      {
+        "line": 30,
+        "content": "supabase.from('orders').select('id', { count: 'exact' }).eq('status', 'pending'),"
+      },
+      {
+        "line": 31,
+        "content": "supabase.from('orders').select('*, order_items(*)').order('created_at', { ascending: false }).limit(5),"
+      },
+      {
+        "line": 32,
+        "content": "supabase.from('products').select('name, review_count, rating, primary_image').order('review_count', { ascending: false }).limit(5),"
+      }
+    ]
+  },
+  {
+    "file": "\\app\\admin\\products\\page.tsx",
+    "matches": [
+      {
+        "line": 4,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 5,
+        "content": "import type { Database } from '@/lib/supabase';"
+      },
+      {
+        "line": 34,
+        "content": "supabase.from('products').select('*').order('created_at', { ascending: false }),"
+      },
+      {
+        "line": 35,
+        "content": "supabase.from('categories').select('*').order('sort_order'),"
+      },
+      {
+        "line": 36,
+        "content": "supabase.from('brands').select('*').order('name'),"
+      },
+      {
+        "line": 52,
+        "content": "const { error } = await supabase.from('products').delete().eq('id', id);"
+      },
+      {
+        "line": 59,
+        "content": "const { error } = await supabase.from('products').update(data).eq('id', editingProduct.id);"
+      },
+      {
+        "line": 63,
+        "content": "const { error } = await supabase.from('products').insert(data);"
+      }
+    ]
+  },
+  {
+    "file": "\\app\\admin\\reviews\\page.tsx",
+    "matches": [
+      {
+        "line": 4,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 5,
+        "content": "import type { Database } from '@/lib/supabase';"
+      },
+      {
+        "line": 20,
+        "content": "const { data } = await supabase"
+      },
+      {
+        "line": 31,
+        "content": "const { error } = await supabase.from('reviews').update({ is_approved: !current }).eq('id', id);"
+      },
+      {
+        "line": 38,
+        "content": "await supabase.from('reviews').delete().eq('id', id);"
+      }
+    ]
+  },
+  {
+    "file": "\\app\\cart\\page.tsx",
+    "matches": [
+      {
+        "line": 10,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 25,
+        "content": "const { data: coupon } = await supabase"
+      }
+    ]
+  },
+  {
+    "file": "\\app\\checkout\\page.tsx",
+    "matches": [
+      {
+        "line": 7,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 55,
+        "content": "const { data: order, error: orderError } = await supabase"
+      },
+      {
+        "line": 79,
+        "content": "await supabase.from('order_items').insert({"
+      },
+      {
+        "line": 90,
+        "content": "await supabase"
+      },
+      {
+        "line": 96,
+        "content": "await supabase.from('addresses').insert({"
+      }
+    ]
+  },
+  {
+    "file": "\\app\\deals\\page.tsx",
+    "matches": [
+      {
+        "line": 4,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 5,
+        "content": "import type { Database } from '@/lib/supabase';"
+      },
+      {
+        "line": 21,
+        "content": "supabase"
+      }
+    ]
+  },
+  {
+    "file": "\\app\\learn\\page.tsx",
+    "matches": [
+      {
+        "line": 4,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 5,
+        "content": "import type { Database } from '@/lib/supabase';"
+      },
+      {
+        "line": 19,
+        "content": "supabase"
+      }
+    ]
+  },
+  {
+    "file": "\\app\\learn\\[slug]\\page.tsx",
+    "matches": [
+      {
+        "line": 5,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 6,
+        "content": "import type { Database } from '@/lib/supabase';"
+      },
+      {
+        "line": 21,
+        "content": "supabase"
+      }
+    ]
+  },
+  {
+    "file": "\\app\\order-success\\page.tsx",
+    "matches": [
+      {
+        "line": 5,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 6,
+        "content": "import type { Database } from '@/lib/supabase';"
+      },
+      {
+        "line": 22,
+        "content": "supabase"
+      }
+    ]
+  },
+  {
+    "file": "\\app\\page.tsx",
+    "matches": [
+      {
+        "line": 6,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 7,
+        "content": "import type { Database } from '@/lib/supabase';"
+      },
+      {
+        "line": 56,
+        "content": "supabase.from('banners').select('*').eq('is_active', true).order('sort_order'),"
+      },
+      {
+        "line": 57,
+        "content": "supabase.from('promo_cards').select('*').eq('is_active', true).order('sort_order'),"
+      },
+      {
+        "line": 58,
+        "content": "supabase.from('deals').select('*, product:products(*)').eq('is_active', true).limit(8),"
+      },
+      {
+        "line": 59,
+        "content": "supabase.from('products').select('*').eq('is_featured', true).eq('is_published', true).limit(10),"
+      },
+      {
+        "line": 60,
+        "content": "supabase.from('products').select('*').eq('is_bestseller', true).eq('is_published', true).limit(10),"
+      },
+      {
+        "line": 61,
+        "content": "supabase.from('products').select('*').eq('is_new_arrival', true).eq('is_published', true).limit(10),"
+      },
+      {
+        "line": 62,
+        "content": "supabase.from('products').select('*').eq('is_published', true).in('category_id', [(await supabase.from('categories').select('id').eq('slug', 'robotics-kits').maybeSingle()).data?.id, (await supabase.from('categories').select('id').eq('slug', 'robotics').maybeSingle()).data?.id].filter(Boolean)).limit(6),"
+      },
+      {
+        "line": 63,
+        "content": "supabase.from('products').select('*').eq('is_published', true).in('category_id', [(await supabase.from('categories').select('id').eq('slug', 'development-boards').maybeSingle()).data?.id].filter(Boolean)).limit(6),"
+      },
+      {
+        "line": 64,
+        "content": "supabase.from('products').select('*').eq('is_published', true).in('category_id', [(await supabase.from('categories').select('id').eq('slug', 'sensors').maybeSingle()).data?.id].filter(Boolean)).limit(6),"
+      },
+      {
+        "line": 65,
+        "content": "supabase.from('products').select('*').eq('is_published', true).in('category_id', [(await supabase.from('categories').select('id').eq('slug', 'arduino').maybeSingle()).data?.id].filter(Boolean)).limit(6),"
+      },
+      {
+        "line": 66,
+        "content": "supabase.from('products').select('*').eq('is_published', true).in('category_id', [(await supabase.from('categories').select('id').eq('slug', '3d-printing').maybeSingle()).data?.id].filter(Boolean)).limit(6),"
+      },
+      {
+        "line": 67,
+        "content": "supabase.from('products').select('*').eq('is_published', true).in('category_id', [(await supabase.from('categories').select('id').eq('slug', 'diy-kits').maybeSingle()).data?.id].filter(Boolean)).limit(6),"
+      },
+      {
+        "line": 68,
+        "content": "supabase.from('products').select('*').eq('is_published', true).in('category_id', [(await supabase.from('categories').select('id').eq('slug', 'student-project-kits').maybeSingle()).data?.id].filter(Boolean)).limit(6),"
+      },
+      {
+        "line": 69,
+        "content": "supabase.from('projects').select('*').eq('is_published', true).limit(6),"
+      },
+      {
+        "line": 70,
+        "content": "supabase.from('tutorials').select('*').eq('is_published', true).limit(6),"
+      }
+    ]
+  },
+  {
+    "file": "\\app\\product\\[slug]\\page.tsx",
+    "matches": [
+      {
+        "line": 5,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 6,
+        "content": "import type { Database } from '@/lib/supabase';"
+      },
+      {
+        "line": 40,
+        "content": "const { data } = await supabase"
+      },
+      {
+        "line": 51,
+        "content": "const { data: related } = await supabase"
+      },
+      {
+        "line": 61,
+        "content": "const { data: reviewData } = await supabase"
+      }
+    ]
+  },
+  {
+    "file": "\\app\\projects\\page.tsx",
+    "matches": [
+      {
+        "line": 4,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 5,
+        "content": "import type { Database } from '@/lib/supabase';"
+      },
+      {
+        "line": 21,
+        "content": "supabase"
+      }
+    ]
+  },
+  {
+    "file": "\\app\\projects\\[slug]\\page.tsx",
+    "matches": [
+      {
+        "line": 5,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 6,
+        "content": "import type { Database } from '@/lib/supabase';"
+      },
+      {
+        "line": 29,
+        "content": "const { data: proj } = await supabase"
+      },
+      {
+        "line": 38,
+        "content": "const { data: comps } = await supabase"
+      }
+    ]
+  },
+  {
+    "file": "\\app\\shop\\page.tsx",
+    "matches": [
+      {
+        "line": 5,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 6,
+        "content": "import type { Database } from '@/lib/supabase';"
+      },
+      {
+        "line": 53,
+        "content": "supabase.from('categories').select('*').order('sort_order'),"
+      },
+      {
+        "line": 54,
+        "content": "supabase.from('brands').select('*').order('name'),"
+      },
+      {
+        "line": 71,
+        "content": "let query = supabase"
+      },
+      {
+        "line": 81,
+        "content": "const { data: cat } = await supabase"
+      },
+      {
+        "line": 90,
+        "content": "const { data: brandData } = await supabase"
+      }
+    ]
+  },
+  {
+    "file": "\\components\\layout\\navbar.tsx",
+    "matches": [
+      {
+        "line": 10,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 11,
+        "content": "import type { Database } from '@/lib/supabase';"
+      },
+      {
+        "line": 50,
+        "content": "const { data } = await supabase"
+      }
+    ]
+  },
+  {
+    "file": "\\components\\product\\product-card.tsx",
+    "matches": [
+      {
+        "line": 5,
+        "content": "import type { Database } from '@/lib/supabase';"
+      }
+    ]
+  },
+  {
+    "file": "\\lib\\auth-context.tsx",
+    "matches": [
+      {
+        "line": 4,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 5,
+        "content": "import type { User } from '@supabase/supabase-js';"
+      },
+      {
+        "line": 25,
+        "content": "const { data } = await supabase"
+      },
+      {
+        "line": 37,
+        "content": "const { data: { session } } = await supabase.auth.getSession();"
+      },
+      {
+        "line": 48,
+        "content": "const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {"
+      },
+      {
+        "line": 68,
+        "content": "const { error } = await supabase.auth.signInWithPassword({ email, password });"
+      },
+      {
+        "line": 73,
+        "content": "const { error } = await supabase.auth.signUp({"
+      },
+      {
+        "line": 82,
+        "content": "await supabase.auth.signOut();"
+      }
+    ]
+  },
+  {
+    "file": "\\lib\\cart-context.tsx",
+    "matches": [
+      {
+        "line": 4,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 5,
+        "content": "import type { Database } from '@/lib/supabase';"
+      },
+      {
+        "line": 42,
+        "content": "const { data: { session } } = await supabase.auth.getSession();"
+      },
+      {
+        "line": 47,
+        "content": "const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {"
+      },
+      {
+        "line": 84,
+        "content": "const { data: cart } = await supabase"
+      },
+      {
+        "line": 91,
+        "content": "const { data: newCart } = await supabase"
+      },
+      {
+        "line": 102,
+        "content": "const { data: cartItems } = await supabase"
+      },
+      {
+        "line": 127,
+        "content": "const { data: cart } = await supabase"
+      },
+      {
+        "line": 135,
+        "content": "const { data: newCart } = await supabase"
+      },
+      {
+        "line": 146,
+        "content": "const { data: existing } = await supabase"
+      },
+      {
+        "line": 154,
+        "content": "await supabase"
+      },
+      {
+        "line": 159,
+        "content": "await supabase"
+      },
+      {
+        "line": 181,
+        "content": "const { data: cart } = await supabase"
+      },
+      {
+        "line": 188,
+        "content": "const { data: existing } = await supabase"
+      },
+      {
+        "line": 196,
+        "content": "await supabase"
+      },
+      {
+        "line": 201,
+        "content": "await supabase"
+      },
+      {
+        "line": 231,
+        "content": "const { data: cart } = await supabase"
+      },
+      {
+        "line": 237,
+        "content": "await supabase"
+      },
+      {
+        "line": 260,
+        "content": "const { data: cart } = await supabase"
+      },
+      {
+        "line": 266,
+        "content": "await supabase"
+      },
+      {
+        "line": 287,
+        "content": "const { data: cart } = await supabase"
+      },
+      {
+        "line": 293,
+        "content": "await supabase.from('cart_items').delete().eq('cart_id', cart.id);"
+      }
+    ]
+  },
+  {
+    "file": "\\lib\\supabase.ts",
+    "matches": [
+      {
+        "line": 1,
+        "content": "import { createClient } from '@supabase/supabase-js';"
+      },
+      {
+        "line": 3,
+        "content": "const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;"
+      },
+      {
+        "line": 4,
+        "content": "const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;"
+      },
+      {
+        "line": 6,
+        "content": "export const supabase = createClient(supabaseUrl, supabaseAnonKey, {"
+      }
+    ]
+  },
+  {
+    "file": "\\lib\\wishlist-context.tsx",
+    "matches": [
+      {
+        "line": 4,
+        "content": "import { supabase } from '@/lib/supabase';"
+      },
+      {
+        "line": 36,
+        "content": "const { data } = await supabase"
+      },
+      {
+        "line": 60,
+        "content": "await supabase"
+      },
+      {
+        "line": 66,
+        "content": "await supabase"
+      }
+    ]
+  }
+]
