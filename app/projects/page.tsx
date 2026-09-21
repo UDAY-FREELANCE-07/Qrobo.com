@@ -33,8 +33,9 @@ export default function ProjectsPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div className="mb-8 overflow-hidden rounded-2xl shadow-sm">
-        <img src="/images/banners/image copy.png" alt="Projects" className="h-auto w-full" />
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-navy mb-2">Projects</h1>
+        <p className="text-muted-foreground">Explore student electronics and robotics projects with guides and component lists</p>
       </div>
 
       {/* Filter */}
