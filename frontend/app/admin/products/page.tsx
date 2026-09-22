@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import type { Database } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,9 +14,9 @@ import { formatPrice } from '@/lib/format';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
-type Product = Database['public']['Tables']['products']['Row'];
-type Category = Database['public']['Tables']['categories']['Row'];
-type Brand = Database['public']['Tables']['brands']['Row'];
+type Product = any;
+type Category = any;
+type Brand = any;
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -30,14 +29,19 @@ export default function AdminProductsPage() {
 
   const load = async () => {
     setIsLoading(true);
-    const [prodRes, catRes, brandRes] = await Promise.all([
-      supabase.from('products').select('*').order('created_at', { ascending: false }),
-      supabase.from('categories').select('*').order('sort_order'),
-      supabase.from('brands').select('*').order('name'),
-    ]);
-    setProducts(prodRes.data || []);
-    setCategories(catRes.data || []);
-    setBrands(brandRes.data || []);
+    try {
+      const [prodRes, catRes, brandRes] = await Promise.all([
+        apiFetch('/admin/products?limit=100'),
+        apiFetch('/admin/categories'),
+        apiFetch('/admin/brands'),
+      ]);
+      setProducts(prodRes?.items || []);
+      setCategories(catRes || []);
+      setBrands(brandRes || []);
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to load data');
+    }
     setIsLoading(false);
   };
 
@@ -49,20 +53,34 @@ export default function AdminProductsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
-    const { error } = await supabase.from('products').delete().eq('id', id);
-    if (error) { toast.error('Failed to delete product'); }
-    else { toast.success('Product deleted'); load(); }
+    try {
+      await apiFetch(`/admin/products/${id}`, { method: 'DELETE' });
+      toast.success('Product deleted');
+      load();
+    } catch (error) {
+      toast.error('Failed to delete product');
+    }
   };
 
   const handleSave = async (data: Partial<Product>) => {
-    if (editingProduct) {
-      const { error } = await supabase.from('products').update(data).eq('id', editingProduct.id);
-      if (error) { toast.error('Failed to update product'); }
-      else { toast.success('Product updated'); setIsDialogOpen(false); load(); }
-    } else {
-      const { error } = await supabase.from('products').insert(data);
-      if (error) { toast.error('Failed to create product'); }
-      else { toast.success('Product created'); setIsDialogOpen(false); load(); }
+    try {
+      if (editingProduct) {
+        await apiFetch(`/admin/products/${editingProduct.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(data),
+        });
+        toast.success('Product updated');
+      } else {
+        await apiFetch('/admin/products', {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+        toast.success('Product created');
+      }
+      setIsDialogOpen(false);
+      load();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to save product');
     }
   };
 
@@ -208,12 +226,12 @@ function ProductForm({ product, categories, brands, onSave, onCancel }: {
       compare_at_price: compareAtPrice ? parseFloat(compareAtPrice) : null,
       stock: parseInt(stock) || 0,
       primary_image: primaryImage,
-      images: images.split(',').map((s) => s.trim()).filter(Boolean),
+      images: images.split(',').map((s: string) => s.trim()).filter(Boolean),
       is_published: isPublished,
       is_featured: isFeatured,
       is_bestseller: isBestseller,
       is_new_arrival: isNewArrival,
-      tags: tags.split(',').map((s) => s.trim()).filter(Boolean),
+      tags: tags.split(',').map((s: string) => s.trim()).filter(Boolean),
       specifications: product?.specifications || {},
       features: product?.features || [],
       whats_included: product?.whats_included || [],

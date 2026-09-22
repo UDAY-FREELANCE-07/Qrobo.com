@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api-client';
 import { Package, ShoppingCart, Users, DollarSign, TrendingUp, AlertTriangle, Clock } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -22,28 +22,25 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const load = async () => {
-      const [ordersRes, productsRes, profilesRes, lowStockRes, pendingRes, recentRes, topRes] = await Promise.all([
-        supabase.from('orders').select('total, status').eq('payment_status', 'paid'),
-        supabase.from('products').select('id', { count: 'exact' }),
-        supabase.from('profiles').select('id', { count: 'exact' }),
-        supabase.from('products').select('id, name, stock').lt('stock', 10).limit(5),
-        supabase.from('orders').select('id', { count: 'exact' }).eq('status', 'pending'),
-        supabase.from('orders').select('*, order_items(*)').order('created_at', { ascending: false }).limit(5),
-        supabase.from('products').select('name, review_count, rating, primary_image').order('review_count', { ascending: false }).limit(5),
-      ]);
-
-      const revenue = (ordersRes.data || []).reduce((sum, o) => sum + (o.total || 0), 0);
-      setStats({
-        totalRevenue: revenue,
-        totalOrders: ordersRes.data?.length || 0,
-        totalCustomers: profilesRes.count || 0,
-        totalProducts: productsRes.count || 0,
-        lowStockProducts: lowStockRes.data || [],
-        pendingOrders: pendingRes.count || 0,
-        recentOrders: recentRes.data || [],
-        topProducts: topRes.data || [],
-      });
-      setIsLoading(false);
+      try {
+        const data = await apiFetch('/admin/dashboard');
+        
+        // Match the frontend's expected stats shape
+        setStats({
+          totalRevenue: Number(data.totalRevenue) || 0,
+          totalOrders: data.totalOrders || 0,
+          totalCustomers: data.totalCustomers || 0,
+          totalProducts: data.totalProducts || 0,
+          lowStockProducts: data.lowStockProducts || [],
+          pendingOrders: data.pendingOrdersCount || 0,
+          recentOrders: data.recentOrders || [],
+          topProducts: [], // Endpoint doesn't provide this yet
+        });
+      } catch (error) {
+        console.error('Failed to load dashboard', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     load();
   }, []);

@@ -1,33 +1,30 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import type { Database } from '@/lib/supabase';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { apiFetch } from '@/lib/api-client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-type Order = Database['public']['Tables']['orders']['Row'];
+type Order = any;
 
-const orderStatuses = ['pending', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled', 'returned', 'refunded'];
+const orderStatuses = ['PENDING', 'PAID', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
 
 export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState<(Order & { order_items: any[] })[]>([]);
+  const [orders, setOrders] = useState<(Order & { items: any[] })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase
-        .from('orders')
-        .select('*, order_items(*)')
-        .order('created_at', { ascending: false });
-      setOrders((data as any) || []);
+      try {
+        const data = await apiFetch('/admin/orders?limit=100');
+        setOrders(data?.items || []);
+      } catch (error) {
+        console.error(error);
+        toast.error('Failed to load orders');
+      }
       setIsLoading(false);
     };
     load();
@@ -36,11 +33,15 @@ export default function AdminOrdersPage() {
   const filtered = filter === 'all' ? orders : orders.filter((o) => o.status === filter);
 
   const updateStatus = async (id: string, status: string) => {
-    const { error } = await supabase.from('orders').update({ status }).eq('id', id);
-    if (error) { toast.error('Failed to update status'); }
-    else {
+    try {
+      await apiFetch(`/admin/orders/${id}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status })
+      });
       toast.success('Order status updated');
       setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status } : o));
+    } catch (error) {
+      toast.error('Failed to update status');
     }
   };
 
@@ -88,10 +89,10 @@ export default function AdminOrdersPage() {
                 <TableRow key={order.id}>
                   <TableCell className="text-sm font-medium text-navy">{order.order_number}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{formatDate(order.created_at)}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{order.order_items?.length || 0} items</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{order.items?.length || 0} items</TableCell>
                   <TableCell className="text-sm font-bold text-navy">{formatPrice(order.total)}</TableCell>
                   <TableCell>
-                    <span className={cn('text-xs px-2 py-1 rounded-full', order.payment_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700')}>
+                    <span className={cn('text-xs px-2 py-1 rounded-full', order.payment_status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700')}>
                       {order.payment_status}
                     </span>
                   </TableCell>

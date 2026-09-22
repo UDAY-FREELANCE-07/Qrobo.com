@@ -1,17 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import type { Database } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-type Banner = Database['public']['Tables']['banners']['Row'];
+type Banner = any;
 
 export default function AdminBannersPage() {
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -27,8 +25,12 @@ export default function AdminBannersPage() {
   const [isActive, setIsActive] = useState(true);
 
   const load = async () => {
-    const { data } = await supabase.from('banners').select('*').order('sort_order');
-    setBanners(data || []);
+    try {
+      const data = await apiFetch('/admin/banners');
+      setBanners(data || []);
+    } catch (error) {
+      toast.error('Failed to load banners');
+    }
     setIsLoading(false);
   };
 
@@ -37,22 +39,36 @@ export default function AdminBannersPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const data = { title, subtitle, description, image_url: imageUrl, category_label: categoryLabel, cta_text: ctaText, cta_link: ctaLink, is_active: isActive };
-    if (editing) {
-      await supabase.from('banners').update(data).eq('id', editing.id);
-      toast.success('Banner updated');
-    } else {
-      await supabase.from('banners').insert(data);
-      toast.success('Banner created');
+    try {
+      if (editing) {
+        await apiFetch(`/admin/banners/${editing.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(data)
+        });
+        toast.success('Banner updated');
+      } else {
+        await apiFetch('/admin/banners', {
+          method: 'POST',
+          body: JSON.stringify(data)
+        });
+        toast.success('Banner created');
+      }
+      setEditing(null); setTitle(''); setSubtitle(''); setDescription(''); setImageUrl(''); setCategoryLabel('');
+      load();
+    } catch (error) {
+      toast.error(editing ? 'Failed to update' : 'Failed to create');
     }
-    setEditing(null); setTitle(''); setSubtitle(''); setDescription(''); setImageUrl(''); setCategoryLabel('');
-    load();
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this banner?')) return;
-    await supabase.from('banners').delete().eq('id', id);
-    toast.success('Banner deleted');
-    load();
+    try {
+      await apiFetch(`/admin/banners/${id}`, { method: 'DELETE' });
+      toast.success('Banner deleted');
+      load();
+    } catch (error) {
+      toast.error('Failed to delete banner');
+    }
   };
 
   return (

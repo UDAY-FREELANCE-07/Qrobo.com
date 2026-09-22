@@ -62,6 +62,7 @@ export const getUserById = async (userId: string) => {
       id: true,
       email: true,
       full_name: true,
+      phone: true,
       role: true,
       created_at: true,
       updated_at: true,
@@ -73,4 +74,26 @@ export const getUserById = async (userId: string) => {
   }
 
   return user;
+};
+
+export const updateProfile = async (userId: string, data: { full_name?: string; phone?: string }) => {
+  return prisma.user.update({
+    where: { id: userId },
+    data,
+    select: {
+      id: true,
+      email: true,
+      full_name: true,
+      phone: true,
+      role: true,
+    }
+  });
+};
+
+export const updatePassword = async (userId: string, password: string) => {
+  const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+  return prisma.user.update({
+    where: { id: userId },
+    data: { password_hash: passwordHash }
+  });
 };

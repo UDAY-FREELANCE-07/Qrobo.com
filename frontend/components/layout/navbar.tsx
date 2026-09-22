@@ -7,15 +7,14 @@ import { Search, Heart, User, ShoppingCart, Menu, X, Cpu, ChevronRight } from 'l
 import { useCart } from '@/lib/cart-context';
 import { useWishlist } from '@/lib/wishlist-context';
 import { useAuth } from '@/lib/auth-context';
-import { supabase } from '@/lib/supabase';
-import type { Database } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { useRouter } from 'next/navigation';
 
-type Product = Database['public']['Tables']['products']['Row'];
+type Product = any;
 
 const navLinks = [
   { label: 'Home', href: '/' },
@@ -47,14 +46,13 @@ export function Navbar() {
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
-      const { data } = await supabase
-        .from('products')
-        .select('*')
-        .or(`name.ilike.%${searchQuery}%,tags.cs.{${searchQuery}}`)
-        .eq('is_published', true)
-        .limit(5);
-      setSearchResults(data || []);
-      setShowSearch(true);
+      try {
+        const data = await apiFetch(`/products?search=${encodeURIComponent(searchQuery)}&limit=5`);
+        setSearchResults(data?.items || []);
+        setShowSearch(true);
+      } catch (error) {
+        console.error('Search failed', error);
+      }
     }, 300);
 
     return () => {

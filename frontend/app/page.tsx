@@ -3,20 +3,19 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, ArrowRight, Clock, Star, Quote, Mail, Flame, Gift, Percent, Rocket, Sparkles } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
-import type { Database } from '@/lib/supabase';
 import { ProductCard } from '@/components/product/product-card';
 import { Button } from '@/components/ui/button';
 import { formatPrice, timeLeftUntil } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { apiFetch } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
 
-type Product = Database['public']['Tables']['products']['Row'];
-type Banner = Database['public']['Tables']['banners']['Row'];
-type PromoCard = Database['public']['Tables']['promo_cards']['Row'];
-type Deal = Database['public']['Tables']['deals']['Row'];
-type Project = Database['public']['Tables']['projects']['Row'];
-type Tutorial = Database['public']['Tables']['tutorials']['Row'];
+type Product = any; // Assuming backend models
+type Banner = any;
+type PromoCard = any;
+type Deal = any;
+type Project = any;
+type Tutorial = any;
 
 const reviews = [
   { name: 'Rahul Sharma', role: 'Engineering Student', rating: 5, text: 'Qrobo has been my go-to for all electronics projects. The quality of components and fast delivery is unmatched. The Arduino starter kit is perfect for beginners!' },
@@ -47,45 +46,51 @@ export default function HomePage() {
 
   useEffect(() => {
     const loadData = async () => {
-      const [
-        bannersRes, promoRes, dealsRes,
-        featuredRes, bestSellerRes, newArrivalRes,
-        roboticsRes, devBoardRes, sensorRes, arduinoRes,
-        threeDRes, diyRes, studentRes, projectsRes, tutorialsRes
-      ] = await Promise.all([
-        supabase.from('banners').select('*').eq('is_active', true).order('sort_order'),
-        supabase.from('promo_cards').select('*').eq('is_active', true).order('sort_order'),
-        supabase.from('deals').select('*, product:products(*)').eq('is_active', true).limit(8),
-        supabase.from('products').select('*').eq('is_featured', true).eq('is_published', true).limit(10),
-        supabase.from('products').select('*').eq('is_bestseller', true).eq('is_published', true).limit(10),
-        supabase.from('products').select('*').eq('is_new_arrival', true).eq('is_published', true).limit(10),
-        supabase.from('products').select('*').eq('is_published', true).in('category_id', [(await supabase.from('categories').select('id').eq('slug', 'robotics-kits').maybeSingle()).data?.id, (await supabase.from('categories').select('id').eq('slug', 'robotics').maybeSingle()).data?.id].filter(Boolean)).limit(6),
-        supabase.from('products').select('*').eq('is_published', true).in('category_id', [(await supabase.from('categories').select('id').eq('slug', 'development-boards').maybeSingle()).data?.id].filter(Boolean)).limit(6),
-        supabase.from('products').select('*').eq('is_published', true).in('category_id', [(await supabase.from('categories').select('id').eq('slug', 'sensors').maybeSingle()).data?.id].filter(Boolean)).limit(6),
-        supabase.from('products').select('*').eq('is_published', true).in('category_id', [(await supabase.from('categories').select('id').eq('slug', 'arduino').maybeSingle()).data?.id].filter(Boolean)).limit(6),
-        supabase.from('products').select('*').eq('is_published', true).in('category_id', [(await supabase.from('categories').select('id').eq('slug', '3d-printing').maybeSingle()).data?.id].filter(Boolean)).limit(6),
-        supabase.from('products').select('*').eq('is_published', true).in('category_id', [(await supabase.from('categories').select('id').eq('slug', 'diy-kits').maybeSingle()).data?.id].filter(Boolean)).limit(6),
-        supabase.from('products').select('*').eq('is_published', true).in('category_id', [(await supabase.from('categories').select('id').eq('slug', 'student-project-kits').maybeSingle()).data?.id].filter(Boolean)).limit(6),
-        supabase.from('projects').select('*').eq('is_published', true).limit(6),
-        supabase.from('tutorials').select('*').eq('is_published', true).limit(6),
-      ]);
+      try {
+        const [
+          bannersRes, promoRes, dealsRes,
+          featuredRes, bestSellerRes, newArrivalRes,
+          roboticsRes, devBoardRes, sensorRes, arduinoRes,
+          threeDRes, diyRes, studentRes, projectsRes, tutorialsRes
+        ] = await Promise.all([
+          apiFetch('/banners?is_active=true&sort=sort_order'),
+          apiFetch('/promo-cards?is_active=true&sort=sort_order'),
+          apiFetch('/deals?is_active=true&limit=8'),
+          apiFetch('/products?is_featured=true&limit=10'),
+          apiFetch('/products?is_bestseller=true&limit=10'),
+          apiFetch('/products?is_new_arrival=true&limit=10'),
+          apiFetch('/products?category_slugs=robotics-kits,robotics&limit=6'),
+          apiFetch('/products?category_slugs=development-boards&limit=6'),
+          apiFetch('/products?category_slugs=sensors&limit=6'),
+          apiFetch('/products?category_slugs=arduino&limit=6'),
+          apiFetch('/products?category_slugs=3d-printing&limit=6'),
+          apiFetch('/products?category_slugs=diy-kits&limit=6'),
+          apiFetch('/products?category_slugs=student-project-kits&limit=6'),
+          apiFetch('/projects?is_published=true&limit=6'),
+          apiFetch('/tutorials?is_published=true&limit=6'),
+        ]);
 
-      setBanners(bannersRes.data || []);
-      setPromoCards(promoRes.data || []);
-      setDeals((dealsRes.data as any) || []);
-      setFeaturedProducts(featuredRes.data || []);
-      setBestSellers(bestSellerRes.data || []);
-      setNewArrivals(newArrivalRes.data || []);
-      setRoboticsProducts(roboticsRes.data || []);
-      setDevBoardProducts(devBoardRes.data || []);
-      setSensorProducts(sensorRes.data || []);
-      setArduinoProducts(arduinoRes.data || []);
-      setThreeDProducts(threeDRes.data || []);
-      setDiyProducts(diyRes.data || []);
-      setStudentProducts(studentRes.data || []);
-      setProjects(projectsRes.data || []);
-      setTutorials(tutorialsRes.data || []);
-      setIsLoading(false);
+        // Access the items array since backend paginates collections with { items, total }
+        setBanners(bannersRes?.items || []);
+        setPromoCards(promoRes?.items || []);
+        setDeals(dealsRes?.items || []);
+        setFeaturedProducts(featuredRes?.items || []);
+        setBestSellers(bestSellerRes?.items || []);
+        setNewArrivals(newArrivalRes?.items || []);
+        setRoboticsProducts(roboticsRes?.items || []);
+        setDevBoardProducts(devBoardRes?.items || []);
+        setSensorProducts(sensorRes?.items || []);
+        setArduinoProducts(arduinoRes?.items || []);
+        setThreeDProducts(threeDRes?.items || []);
+        setDiyProducts(diyRes?.items || []);
+        setStudentProducts(studentRes?.items || []);
+        setProjects(projectsRes?.items || []);
+        setTutorials(tutorialsRes?.items || []);
+      } catch (error) {
+        console.error('Failed to load home page data', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     loadData();
   }, []);

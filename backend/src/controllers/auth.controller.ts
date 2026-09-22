@@ -100,3 +100,25 @@ export const refresh = (req: Request, res: Response, next: NextFunction) => {
     next(new AppError('Invalid or expired refresh token', 401, 'UNAUTHORIZED'));
   }
 };
+
+export const updateProfile = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req as any).user.userId;
+    const { full_name, phone } = req.body;
+    const user = await authService.updateProfile(userId, { full_name, phone });
+    res.status(200).json({ status: 'success', data: user });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updatePassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req as any).user.userId;
+    const { password } = req.body;
+    await authService.updatePassword(userId, password);
+    res.status(200).json({ status: 'success', message: 'Password updated' });
+  } catch (error) {
+    next(error);
+  }
+};

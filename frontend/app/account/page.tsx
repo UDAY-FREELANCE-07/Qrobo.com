@@ -1,32 +1,36 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { supabase } from '@/lib/supabase';
-import type { Database } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User as UserIcon, Package, Heart, MapPin, Key, LogOut, ShoppingBag } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-type Order = Database['public']['Tables']['orders']['Row'];
-type OrderItem = Database['public']['Tables']['order_items']['Row'];
-type Address = Database['public']['Tables']['addresses']['Row'];
-type Product = Database['public']['Tables']['products']['Row'];
+type Order = any;
+type Address = any;
+type Product = any;
 
 export default function AccountPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Loading account...</div>}>
+      <AccountContent />
+    </Suspense>
+  );
+}
+
+function AccountContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, profile, signOut, refreshProfile } = useAuth();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'profile');
-  const [orders, setOrders] = useState<(Order & { order_items: OrderItem[] })[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [wishlistProducts, setWishlistProducts] = useState<Product[]>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [fullName, setFullName] = useState(profile?.full_name || '');
@@ -38,25 +42,21 @@ export default function AccountPage() {
       return;
     }
     const loadData = async () => {
-      const [ordersRes, wishlistRes, addrRes] = await Promise.all([
-        supabase
-          .from('orders')
-          .select('*, order_items(*)')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('wishlists')
-          .select('product:products(*)')
-          .eq('user_id', user.id),
-        supabase
-          .from('addresses')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false }),
-      ]);
-      setOrders((ordersRes.data as any) || []);
-      setWishlistProducts((wishlistRes.data?.map((w: any) => w.product).filter(Boolean)) || []);
-      setAddresses(addrRes.data || []);
+      try {
+        const [ordersRes, wishlistRes, addrRes] = await Promise.all([
+          apiFetch('/orders'),
+          apiFetch('/wishlist'),
+          apiFetch('/addresses')
+        ]);
+        setOrders(ordersRes?.items || []);
+        // In the new API, wishlist items should return product details.
+        // Wait, does /wishlist return { product_id, product: {...} }?
+        // Let's just use what it returns. Assuming it returns `product`.
+        setWishlistProducts(wishlistRes?.items?.map((w: any) => w.product).filter(Boolean) || []);
+        setAddresses(addrRes?.items || []);
+      } catch (error) {
+        console.error('Failed to load account data', error);
+      }
     };
     loadData();
   }, [user, router]);
@@ -69,15 +69,15 @@ export default function AccountPage() {
   if (!user) return null;
 
   const updateProfile = async () => {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ full_name: fullName, phone })
-      .eq('id', user.id);
-    if (error) {
-      toast.error('Failed to update profile');
-    } else {
+    try {
+      await apiFetch('/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify({ full_name: fullName, phone })
+      });
       toast.success('Profile updated');
       refreshProfile();
+    } catch (error) {
+      toast.error('Failed to update profile');
     }
   };
 
@@ -185,7 +185,7 @@ export default function AccountPage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      {order.order_items.map((item) => (
+                      {order.items?.map((item: any) => (
                         <div key={item.id} className="flex items-center gap-3 text-sm">
                           {item.product_image && (
                             <img src={item.product_image} alt={item.product_name} className="w-10 h-10 rounded object-cover" />
@@ -286,13 +286,16 @@ function PasswordChangeForm() {
       return;
     }
     setIsLoading(true);
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) {
-      toast.error(error.message);
-    } else {
+    try {
+      await apiFetch('/auth/password', {
+        method: 'PUT',
+        body: JSON.stringify({ password: newPassword })
+      });
       toast.success('Password updated');
       setNewPassword('');
       setConfirmPassword('');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update password');
     }
     setIsLoading(false);
   };

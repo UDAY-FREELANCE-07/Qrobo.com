@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import type { Database } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api-client';
 import { ProductCard } from '@/components/product/product-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Clock, Flame, Zap, AlertCircle, TrendingDown, Sparkles } from 'lucide-react';
@@ -10,23 +9,25 @@ import { formatPrice, timeLeftUntil } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
-type Deal = Database['public']['Tables']['deals']['Row'];
-type Product = Database['public']['Tables']['products']['Row'];
+type Deal = any;
+type Product = any;
 
 export default function DealsPage() {
   const [deals, setDeals] = useState<(Deal & { product: Product })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    supabase
-      .from('deals')
-      .select('*, product:products(*)')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        setDeals((data as any) || []);
+    const fetchDeals = async () => {
+      try {
+        const data = await apiFetch('/deals?is_active=true');
+        setDeals(data?.items || []);
+      } catch (error) {
+        console.error('Failed to load deals', error);
+      } finally {
         setIsLoading(false);
-      });
+      }
+    };
+    fetchDeals();
   }, []);
 
   return (

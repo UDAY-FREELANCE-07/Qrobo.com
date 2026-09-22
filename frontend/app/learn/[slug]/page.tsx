@@ -2,15 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
-import type { Database } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api-client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Clock, ArrowRight, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
-type Tutorial = Database['public']['Tables']['tutorials']['Row'];
+type Tutorial = any;
 
 export default function TutorialDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -18,16 +17,17 @@ export default function TutorialDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    supabase
-      .from('tutorials')
-      .select('*')
-      .eq('slug', slug)
-      .eq('is_published', true)
-      .maybeSingle()
-      .then(({ data }) => {
-        setTutorial(data);
+    const load = async () => {
+      try {
+        const data = await apiFetch(`/tutorials?slug=${slug}&is_published=true&limit=1`);
+        setTutorial(data?.items?.[0] || null);
+      } catch (error) {
+        console.error('Failed to load tutorial', error);
+      } finally {
         setIsLoading(false);
-      });
+      }
+    };
+    load();
   }, [slug]);
 
   if (isLoading) {
@@ -85,7 +85,7 @@ export default function TutorialDetailPage() {
 
       {tutorial.tags && tutorial.tags.length > 0 && (
         <div className="flex flex-wrap gap-2 mt-8 pt-6 border-t">
-          {tutorial.tags.map((tag, i) => (
+          {tutorial.tags.map((tag: string, i: number) => (
             <span key={i} className="text-xs bg-blue-50 text-primary px-3 py-1 rounded-full">{tag}</span>
           ))}
         </div>

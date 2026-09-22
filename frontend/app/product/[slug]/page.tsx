@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
-import type { Database } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api-client';
 import { useCart } from '@/lib/cart-context';
 import { useWishlist } from '@/lib/wishlist-context';
 import { useAuth } from '@/lib/auth-context';
@@ -17,8 +16,8 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
-type Product = Database['public']['Tables']['products']['Row'];
-type Review = Database['public']['Tables']['reviews']['Row'];
+type Product = any;
+type Review = any;
 
 export default function ProductDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -37,34 +36,25 @@ export default function ProductDetailPage() {
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
-      const { data } = await supabase
-        .from('products')
-        .select('*')
-        .eq('slug', slug)
-        .eq('is_published', true)
-        .maybeSingle();
+      try {
+        const prodData = await apiFetch(`/products?slug=${slug}&is_published=true&limit=1`);
+        const productData = prodData?.items?.[0];
 
-      if (data) {
-        setProduct(data);
-        // Load related products
-        if (data.category_id) {
-          const { data: related } = await supabase
-            .from('products')
-            .select('*')
-            .eq('category_id', data.category_id)
-            .neq('id', data.id)
-            .eq('is_published', true)
-            .limit(5);
-          setRelatedProducts(related || []);
+        if (productData) {
+          setProduct(productData);
+          // Load related products
+          if (productData.category_id) {
+            const relatedData = await apiFetch(`/products?category_id=${productData.category_id}&is_published=true&limit=6`);
+            // Filter out current product
+            const related = (relatedData?.items || []).filter((p: Product) => p.id !== productData.id).slice(0, 5);
+            setRelatedProducts(related);
+          }
+          // Load reviews
+          const reviewData = await apiFetch(`/products/${productData.id}/reviews`);
+          setReviews(reviewData?.items || reviewData || []);
         }
-        // Load reviews
-        const { data: reviewData } = await supabase
-          .from('reviews')
-          .select('*')
-          .eq('product_id', data.id)
-          .eq('is_approved', true)
-          .order('created_at', { ascending: false });
-        setReviews(reviewData || []);
+      } catch (error) {
+        console.error('Failed to load product', error);
       }
       setIsLoading(false);
     };
@@ -148,7 +138,7 @@ export default function ProductDetailPage() {
           </div>
           {images.length > 1 && (
             <div className="flex gap-2">
-              {images.map((img, i) => (
+              {images.map((img: string, i: number) => (
                 <button
                   key={i}
                   onClick={() => setSelectedImage(i)}
@@ -250,7 +240,7 @@ export default function ProductDetailPage() {
             <div className="mb-6">
               <h3 className="text-sm font-semibold text-navy mb-3">Key Features</h3>
               <ul className="space-y-2">
-                {product.features.map((feature, i) => (
+                {product.features.map((feature: string, i: number) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
                     <Check className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
                     {feature}
@@ -298,7 +288,7 @@ export default function ProductDetailPage() {
             {Object.entries(product.specifications || {}).map(([key, value]) => (
               <div key={key} className="flex justify-between py-2 border-b border-gray-100">
                 <span className="text-sm font-medium text-navy">{key}</span>
-                <span className="text-sm text-muted-foreground text-right">{value}</span>
+                <span className="text-sm text-muted-foreground text-right">{value as React.ReactNode}</span>
               </div>
             ))}
           </div>
@@ -310,7 +300,7 @@ export default function ProductDetailPage() {
               <div>
                 <h3 className="text-sm font-semibold text-navy mb-3">Features</h3>
                 <ul className="space-y-2">
-                  {product.features.map((f, i) => (
+                  {product.features.map((f: string, i: number) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
                       <Check className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
                       {f}
@@ -323,7 +313,7 @@ export default function ProductDetailPage() {
               <div>
                 <h3 className="text-sm font-semibold text-navy mb-3">What's Included</h3>
                 <ul className="space-y-2">
-                  {product.whats_included.map((item, i) => (
+                  {product.whats_included.map((item: string, i: number) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
                       <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                       {item}
@@ -336,7 +326,7 @@ export default function ProductDetailPage() {
               <div>
                 <h3 className="text-sm font-semibold text-navy mb-3">Compatibility</h3>
                 <div className="flex flex-wrap gap-2">
-                  {product.compatibility.map((c, i) => (
+                  {product.compatibility.map((c: string, i: number) => (
                     <span key={i} className="text-xs bg-blue-50 text-primary px-3 py-1 rounded-full">{c}</span>
                   ))}
                 </div>

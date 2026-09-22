@@ -19,6 +19,10 @@ export const findProjects = async (query: ProjectQuery, skip: number) => {
     where.difficulty = query.difficulty;
   }
 
+  if (query.slug) {
+    where.slug = query.slug;
+  }
+
   const [total, items] = await Promise.all([
     prisma.project.count({ where }),
     prisma.project.findMany({
@@ -38,5 +42,12 @@ export const findProjectById = async (id: string) => {
       id,
       is_published: true,
     },
+    include: {
+      components: {
+        include: {
+          product: { select: { id: true, name: true, slug: true, primary_image: true, price: true } }
+        }
+      }
+    }
   });
 };

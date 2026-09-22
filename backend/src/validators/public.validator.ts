@@ -15,9 +15,13 @@ export const productQuerySchema = paginationSchema.extend({
   brand_id: z.string().uuid().optional(),
   min_price: z.string().optional().transform(val => (val ? parseFloat(val) : undefined)),
   max_price: z.string().optional().transform(val => (val ? parseFloat(val) : undefined)),
-  sort: z.enum(['newest', 'price_asc', 'price_desc', 'rating']).optional(),
+  sort: z.enum(['newest', 'price_asc', 'price_desc', 'rating', 'popularity']).optional(),
   is_featured: z.string().optional().transform(val => val === 'true' ? true : undefined),
   is_deal: z.string().optional().transform(val => val === 'true' ? true : undefined),
+  is_bestseller: z.string().optional().transform(val => val === 'true' ? true : undefined),
+  is_new_arrival: z.string().optional().transform(val => val === 'true' ? true : undefined),
+  category_slugs: z.string().optional(),
+  slug: z.string().optional(),
 });
 
 export const categoryQuerySchema = paginationSchema.extend({
@@ -33,12 +37,14 @@ export const brandQuerySchema = paginationSchema.extend({
 export const projectQuerySchema = paginationSchema.extend({
   search: z.string().optional(),
   difficulty: z.string().optional(),
+  slug: z.string().optional(),
 });
 
 export const tutorialQuerySchema = paginationSchema.extend({
   search: z.string().optional(),
   category: z.string().optional(),
   difficulty: z.string().optional(),
+  slug: z.string().optional(),
 });
 
 export type PaginationQuery = z.infer<typeof paginationSchema>;

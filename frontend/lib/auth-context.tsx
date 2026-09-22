@@ -1,12 +1,20 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import type { User } from '@supabase/supabase-js';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { apiFetch } from '@/lib/api-client';
+
+interface User {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: string;
+  phone: string | null;
+  avatar_url?: string | null;
+}
 
 interface AuthContextType {
   user: User | null;
-  profile: { id: string; full_name: string | null; role: string; phone: string | null } | null;
+  profile: User | null; 
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
@@ -18,79 +26,59 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<AuthContextType['profile']>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, full_name, role, phone')
-      .eq('id', userId)
-      .maybeSingle();
-    setProfile(data);
-  };
-
-  useEffect(() => {
-    let mounted = true;
-
-    const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (mounted) {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-        }
-        setIsLoading(false);
-      }
-    };
-    init();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      (async () => {
-        if (!mounted) return;
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-        } else {
-          setProfile(null);
-        }
-        setIsLoading(false);
-      })();
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+  const fetchUser = useCallback(async () => {
+    try {
+      const data = await apiFetch('/auth/me');
+      setUser(data.user);
+    } catch (error) {
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
+
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message ?? null };
+    try {
+      await apiFetch('/auth/signin', { data: { email, password } });
+      await fetchUser();
+      return { error: null };
+    } catch (error: any) {
+      return { error: error.message || 'Login failed' };
+    }
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName } },
-    });
-    return { error: error?.message ?? null };
+    try {
+      await apiFetch('/auth/signup', { data: { email, password, full_name: fullName } });
+      await fetchUser();
+      return { error: null };
+    } catch (error: any) {
+      return { error: error.message || 'Signup failed' };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+        await apiFetch('/auth/signout', { method: 'POST' });
+    } catch (e) {
+        // Ignore error on signout
+    }
     setUser(null);
-    setProfile(null);
   };
 
   const refreshProfile = async () => {
-    if (user) await fetchProfile(user.id);
+    await fetchUser();
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, profile, isLoading, signIn, signUp, signOut, refreshProfile }}
+      value={{ user, profile: user, isLoading, signIn, signUp, signOut, refreshProfile }}
     >
       {children}
     </AuthContext.Provider>

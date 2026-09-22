@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
-import type { Database } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api-client';
 import { useCart } from '@/lib/cart-context';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,9 +12,9 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
-type Project = Database['public']['Tables']['projects']['Row'];
-type ProjectComponent = Database['public']['Tables']['project_components']['Row'];
-type Product = Database['public']['Tables']['products']['Row'];
+type Project = any;
+type ProjectComponent = any;
+type Product = any;
 
 export default function ProjectDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -26,22 +25,21 @@ export default function ProjectDetailPage() {
 
   useEffect(() => {
     const load = async () => {
-      const { data: proj } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('slug', slug)
-        .eq('is_published', true)
-        .maybeSingle();
-      setProject(proj);
+      try {
+        const projData = await apiFetch(`/projects?slug=${slug}&is_published=true&limit=1`);
+        const proj = projData?.items?.[0];
 
-      if (proj) {
-        const { data: comps } = await supabase
-          .from('project_components')
-          .select('*, product:products(*)')
-          .eq('project_id', proj.id);
-        setComponents((comps as any) || []);
+        if (proj) {
+          // backend /projects?slug=... might not include components, so fetch by ID
+          const projDetails = await apiFetch(`/projects/${proj.id}`);
+          setProject(projDetails);
+          setComponents(projDetails.components || []);
+        }
+      } catch (error) {
+        console.error('Failed to load project', error);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
     load();
   }, [slug]);
@@ -121,7 +119,7 @@ export default function ProjectDetailPage() {
       {/* Tags */}
       {project.tags && project.tags.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-6">
-          {project.tags.map((tag, i) => (
+          {project.tags.map((tag: string, i: number) => (
             <span key={i} className="text-xs bg-blue-50 text-primary px-3 py-1 rounded-full">{tag}</span>
           ))}
         </div>

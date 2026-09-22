@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import type { Database } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api-client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Clock, DollarSign, Wrench, ArrowRight } from 'lucide-react';
@@ -10,7 +9,7 @@ import { formatPrice } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
-type Project = Database['public']['Tables']['projects']['Row'];
+type Project = any;
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -18,15 +17,17 @@ export default function ProjectsPage() {
   const [filter, setFilter] = useState<'all' | 'beginner' | 'intermediate' | 'advanced'>('all');
 
   useEffect(() => {
-    supabase
-      .from('projects')
-      .select('*')
-      .eq('is_published', true)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        setProjects(data || []);
+    const load = async () => {
+      try {
+        const data = await apiFetch('/projects?is_published=true');
+        setProjects(data?.items || []);
+      } catch (error) {
+        console.error('Failed to load projects', error);
+      } finally {
         setIsLoading(false);
-      });
+      }
+    };
+    load();
   }, []);
 
   const filtered = filter === 'all' ? projects : projects.filter((p) => p.difficulty === filter);

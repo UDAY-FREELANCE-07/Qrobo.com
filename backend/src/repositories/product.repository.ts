@@ -19,6 +19,10 @@ export const findProducts = async (query: ProductQuery, skip: number) => {
     where.category_id = query.category_id;
   }
 
+  if (query.slug) {
+    where.slug = query.slug;
+  }
+
   if (query.brand_id) {
     where.brand_id = query.brand_id;
   }
@@ -37,10 +41,26 @@ export const findProducts = async (query: ProductQuery, skip: number) => {
     where.is_deal = query.is_deal;
   }
 
+  if (query.is_bestseller !== undefined) {
+    where.is_bestseller = query.is_bestseller;
+  }
+
+  if (query.is_new_arrival !== undefined) {
+    where.is_new_arrival = query.is_new_arrival;
+  }
+
+  if (query.category_slugs) {
+    const slugs = query.category_slugs.split(',');
+    where.category = {
+      slug: { in: slugs }
+    };
+  }
+
   let orderBy: Prisma.ProductOrderByWithRelationInput = { created_at: 'desc' };
   if (query.sort === 'price_asc') orderBy = { price: 'asc' };
   else if (query.sort === 'price_desc') orderBy = { price: 'desc' };
   else if (query.sort === 'rating') orderBy = { rating: 'desc' };
+  else if (query.sort === 'popularity') orderBy = { review_count: 'desc' };
 
   const [total, items] = await Promise.all([
     prisma.product.count({ where }),

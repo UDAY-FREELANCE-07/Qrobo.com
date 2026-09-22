@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Heart, ShoppingCart, Eye, Star } from 'lucide-react';
-import type { Database } from '@/lib/supabase';
+
 import { useCart } from '@/lib/cart-context';
 import { useWishlist } from '@/lib/wishlist-context';
 import { formatPrice, calculateDiscountPercentage, getStockStatus } from '@/lib/format';
@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
-type Product = Database['public']['Tables']['products']['Row'];
+type Product = any;
 
 interface ProductCardProps {
   product: Product;

@@ -23,6 +23,10 @@ export const findTutorials = async (query: TutorialQuery, skip: number) => {
     where.difficulty = query.difficulty;
   }
 
+  if (query.slug) {
+    where.slug = query.slug;
+  }
+
   const [total, items] = await Promise.all([
     prisma.tutorial.count({ where }),
     prisma.tutorial.findMany({

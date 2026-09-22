@@ -18,7 +18,12 @@ export const findDeals = async (query: PaginationQuery, skip: number) => {
       skip,
       take: query.limit,
       include: {
-        product: { select: { id: true, name: true, slug: true, primary_image: true, price: true } }
+        product: {
+          include: {
+            category: { select: { id: true, name: true, slug: true } },
+            brand: { select: { id: true, name: true, slug: true } }
+          }
+        }
       }
     }),
   ]);
@@ -33,7 +38,12 @@ export const findDealById = async (id: string) => {
       is_active: true,
     },
     include: {
-        product: { select: { id: true, name: true, slug: true, primary_image: true, price: true } }
+        product: {
+          include: {
+            category: { select: { id: true, name: true, slug: true } },
+            brand: { select: { id: true, name: true, slug: true } }
+          }
+        }
     }
   });
 };

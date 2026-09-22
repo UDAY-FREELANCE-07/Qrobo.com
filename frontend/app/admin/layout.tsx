@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
-import { supabase } from '@/lib/supabase';
 import { LayoutDashboard, Package, FolderTree, Tag, Boxes, ShoppingCart, Users, Ticket, Star, Image, Settings, Cpu, Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -37,23 +36,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         router.push('/login');
         return;
       }
-      if (profile?.role === 'admin') {
+      if (profile?.role?.toUpperCase() === 'ADMIN') {
         setIsAdmin(true);
         setChecking(false);
       } else {
-        supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .maybeSingle()
-          .then(({ data }) => {
-            if (data?.role === 'admin') {
-              setIsAdmin(true);
-            } else {
-              router.push('/');
-            }
-            setChecking(false);
-          });
+        router.push('/');
+        setChecking(false);
       }
     }
   }, [user, profile, isLoading, router]);

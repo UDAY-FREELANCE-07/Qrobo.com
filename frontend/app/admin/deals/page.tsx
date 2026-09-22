@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import type { Database } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,11 +11,11 @@ import { Trash2 } from 'lucide-react';
 import { formatPrice } from '@/lib/format';
 import { toast } from 'sonner';
 
-type Deal = Database['public']['Tables']['deals']['Row'];
-type Product = Database['public']['Tables']['products']['Row'];
+type Deal = any;
+type Product = any;
 
 export default function AdminDealsPage() {
-  const [deals, setDeals] = useState<(Deal & { product: Product })[]>([]);
+  const [deals, setDeals] = useState<Deal[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [productId, setProductId] = useState('');
@@ -26,12 +25,16 @@ export default function AdminDealsPage() {
   const [daysValid, setDaysValid] = useState('7');
 
   const load = async () => {
-    const [dealsRes, prodRes] = await Promise.all([
-      supabase.from('deals').select('*, product:products(*)').order('created_at', { ascending: false }),
-      supabase.from('products').select('*').eq('is_published', true).order('name'),
-    ]);
-    setDeals((dealsRes.data as any) || []);
-    setProducts(prodRes.data || []);
+    try {
+      const [dealsRes, prodRes] = await Promise.all([
+        apiFetch('/admin/deals'),
+        apiFetch('/admin/products?is_published=true&limit=100'),
+      ]);
+      setDeals(dealsRes || []);
+      setProducts(prodRes?.items || []);
+    } catch (error) {
+      toast.error('Failed to load data');
+    }
     setIsLoading(false);
   };
 
@@ -42,23 +45,35 @@ export default function AdminDealsPage() {
     if (!productId) { toast.error('Select a product'); return; }
     const ends = new Date();
     ends.setDate(ends.getDate() + parseInt(daysValid));
-    const { error } = await supabase.from('deals').insert({
-      product_id: productId,
-      sale_price: parseFloat(salePrice) || 0,
-      original_price: parseFloat(originalPrice) || 0,
-      discount_percentage: parseFloat(discountPercentage) || 0,
-      ends_at: ends.toISOString(),
-      is_active: true,
-    });
-    if (error) { toast.error('Failed to create deal'); }
-    else { toast.success('Deal created'); setProductId(''); setSalePrice(''); setOriginalPrice(''); setDiscountPercentage(''); load(); }
+    try {
+      await apiFetch('/admin/deals', {
+        method: 'POST',
+        body: JSON.stringify({
+          product_id: productId,
+          sale_price: parseFloat(salePrice) || 0,
+          original_price: parseFloat(originalPrice) || 0,
+          discount_percentage: parseFloat(discountPercentage) || 0,
+          ends_at: ends.toISOString(),
+          is_active: true,
+        })
+      });
+      toast.success('Deal created');
+      setProductId(''); setSalePrice(''); setOriginalPrice(''); setDiscountPercentage('');
+      load();
+    } catch (error) {
+      toast.error('Failed to create deal');
+    }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this deal?')) return;
-    await supabase.from('deals').delete().eq('id', id);
-    toast.success('Deal deleted');
-    load();
+    try {
+      await apiFetch(`/admin/deals/${id}`, { method: 'DELETE' });
+      toast.success('Deal deleted');
+      load();
+    } catch (error) {
+      toast.error('Failed to delete deal');
+    }
   };
 
   return (

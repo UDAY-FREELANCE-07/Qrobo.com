@@ -1,43 +1,54 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import type { Database } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Star, Check, X } from 'lucide-react';
+import { Star, Check, X, Trash2 } from 'lucide-react';
 import { formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-type Review = Database['public']['Tables']['reviews']['Row'];
+type Review = any;
 
 export default function AdminReviewsPage() {
-  const [reviews, setReviews] = useState<(Review & { product: { name: string } | null })[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const load = async () => {
-    const { data } = await supabase
-      .from('reviews')
-      .select('*, product:products(name)')
-      .order('created_at', { ascending: false });
-    setReviews((data as any) || []);
+    try {
+      const data = await apiFetch('/admin/reviews?limit=100');
+      setReviews(data?.items || []);
+    } catch (error) {
+      toast.error('Failed to load reviews');
+    }
     setIsLoading(false);
   };
 
   useEffect(() => { load(); }, []);
 
   const toggleApproval = async (id: string, current: boolean) => {
-    const { error } = await supabase.from('reviews').update({ is_approved: !current }).eq('id', id);
-    if (error) { toast.error('Failed to update'); }
-    else { toast.success(!current ? 'Review approved' : 'Review hidden'); load(); }
+    try {
+      await apiFetch(`/admin/reviews/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ is_approved: !current })
+      });
+      toast.success(!current ? 'Review approved' : 'Review hidden');
+      load();
+    } catch (error) {
+      toast.error('Failed to update');
+    }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this review?')) return;
-    await supabase.from('reviews').delete().eq('id', id);
-    toast.success('Review deleted');
-    load();
+    try {
+      await apiFetch(`/admin/reviews/${id}`, { method: 'DELETE' });
+      toast.success('Review deleted');
+      load();
+    } catch (error) {
+      toast.error('Failed to delete review');
+    }
   };
 
   return (
@@ -82,6 +93,9 @@ export default function AdminReviewsPage() {
                     <div className="flex gap-1">
                       <Button size="sm" variant="ghost" onClick={() => toggleApproval(review.id, review.is_approved)}>
                         {review.is_approved ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => handleDelete(review.id)}>
+                        <Trash2 className="w-4 h-4 text-red-500" />
                       </Button>
                     </div>
                   </TableCell>

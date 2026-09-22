@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import type { Database } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-type Category = Database['public']['Tables']['categories']['Row'];
+type Category = any;
 
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -22,8 +21,12 @@ export default function AdminCategoriesPage() {
   const [isFeatured, setIsFeatured] = useState(false);
 
   const load = async () => {
-    const { data } = await supabase.from('categories').select('*').order('sort_order');
-    setCategories(data || []);
+    try {
+      const data = await apiFetch('/admin/categories');
+      setCategories(data || []);
+    } catch (error) {
+      toast.error('Failed to load categories');
+    }
     setIsLoading(false);
   };
 
@@ -32,24 +35,36 @@ export default function AdminCategoriesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const data = { name, slug: slug || name.toLowerCase().replace(/\s+/g, '-'), icon_name: iconName, is_featured: isFeatured };
-    if (editing) {
-      const { error } = await supabase.from('categories').update(data).eq('id', editing.id);
-      if (error) { toast.error('Failed to update'); return; }
-      toast.success('Category updated');
-    } else {
-      const { error } = await supabase.from('categories').insert(data);
-      if (error) { toast.error('Failed to create'); return; }
-      toast.success('Category created');
+    try {
+      if (editing) {
+        await apiFetch(`/admin/categories/${editing.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(data)
+        });
+        toast.success('Category updated');
+      } else {
+        await apiFetch('/admin/categories', {
+          method: 'POST',
+          body: JSON.stringify(data)
+        });
+        toast.success('Category created');
+      }
+      setEditing(null); setName(''); setSlug(''); setIconName('Cpu'); setIsFeatured(false);
+      load();
+    } catch (error) {
+      toast.error(editing ? 'Failed to update' : 'Failed to create');
     }
-    setEditing(null); setName(''); setSlug(''); setIconName('Cpu'); setIsFeatured(false);
-    load();
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this category?')) return;
-    const { error } = await supabase.from('categories').delete().eq('id', id);
-    if (error) { toast.error('Cannot delete - products may reference this category'); }
-    else { toast.success('Category deleted'); load(); }
+    try {
+      await apiFetch(`/admin/categories/${id}`, { method: 'DELETE' });
+      toast.success('Category deleted');
+      load();
+    } catch (error) {
+      toast.error('Cannot delete - products may reference this category');
+    }
   };
 
   return (

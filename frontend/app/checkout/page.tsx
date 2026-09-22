@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/lib/cart-context';
 import { useAuth } from '@/lib/auth-context';
-import { supabase } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Check, ChevronRight, CreditCard, Truck, MapPin, Package } from 'lucide-react';
-import { formatPrice, generateOrderNumber } from '@/lib/format';
+import { formatPrice } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -51,68 +51,49 @@ export default function CheckoutPage() {
   const placeOrder = async () => {
     setIsLoading(true);
     try {
-      const orderNumber = generateOrderNumber();
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          order_number: orderNumber,
-          user_id: user.id,
-          status: 'confirmed',
-          payment_status: 'paid',
-          payment_method: 'cod',
-          subtotal,
-          shipping_cost: shippingCost,
-          tax,
-          total,
-          shipping_address: address,
+      // 1. Create Address in backend
+      const addrRes = await apiFetch('/addresses', {
+        method: 'POST',
+        body: JSON.stringify({
+          label: 'Home',
+          full_name: address.fullName,
+          phone: address.phone,
+          address_line1: address.addressLine1,
+          address_line2: address.addressLine2 || '',
+          city: address.city,
+          state: address.state,
+          postal_code: address.postalCode,
+          country: address.country,
+          is_default: true,
         })
-        .select('id')
-        .single();
-
-      if (orderError || !order) {
-        toast.error('Failed to create order');
-        setIsLoading(false);
-        return;
-      }
-
-      for (const item of items) {
-        await supabase.from('order_items').insert({
-          order_id: order.id,
-          product_id: item.product.id,
-          product_name: item.product.name,
-          product_image: item.product.primary_image,
-          product_slug: item.product.slug,
-          sku: item.product.sku,
-          price: item.product.price,
-          quantity: item.quantity,
-          total: item.product.price * item.quantity,
-        });
-        await supabase
-          .from('products')
-          .update({ stock: item.product.stock - item.quantity })
-          .eq('id', item.product.id);
-      }
-
-      await supabase.from('addresses').insert({
-        user_id: user.id,
-        full_name: address.fullName,
-        phone: address.phone,
-        address_line1: address.addressLine1,
-        address_line2: address.addressLine2,
-        city: address.city,
-        state: address.state,
-        postal_code: address.postalCode,
-        country: address.country,
-        is_default: true,
       });
+
+      if (!addrRes?.id) {
+        throw new Error('Failed to create address');
+      }
+
+      // 2. Place Order
+      const orderRes = await apiFetch('/orders', {
+        method: 'POST',
+        body: JSON.stringify({
+          shipping_address_id: addrRes.id,
+          payment_method: 'cod'
+        })
+      });
+
+      if (!orderRes?.id) {
+        throw new Error('Failed to create order');
+      }
 
       await clearCart();
       toast.success('Order placed successfully!');
-      router.push(`/order-success?id=${order.id}`);
-    } catch {
-      toast.error('Something went wrong');
+      router.push(`/order-success?id=${orderRes.id}`);
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.message || 'Something went wrong');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (

@@ -1,30 +1,34 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
-import type { Database } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api-client';
 import { CheckCircle2, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatPrice, formatDate } from '@/lib/format';
 import Link from 'next/link';
 
-type Order = Database['public']['Tables']['orders']['Row'];
-type OrderItem = Database['public']['Tables']['order_items']['Row'];
+type Order = any;
+type OrderItem = any;
 
 export default function OrderSuccessPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+      <OrderSuccessContent />
+    </Suspense>
+  );
+}
+
+function OrderSuccessContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('id');
-  const [order, setOrder] = useState<(Order & { order_items: OrderItem[] }) | null>(null);
+  const [order, setOrder] = useState<(Order & { items: OrderItem[] }) | null>(null);
 
   useEffect(() => {
     if (orderId) {
-      supabase
-        .from('orders')
-        .select('*, order_items(*)')
-        .eq('id', orderId)
-        .maybeSingle()
-        .then(({ data }) => setOrder(data as any));
+      apiFetch(`/orders/${orderId}`)
+        .then(setOrder)
+        .catch(console.error);
     }
   }, [orderId]);
 
@@ -50,7 +54,7 @@ export default function OrderSuccessPage() {
           </div>
 
           <div className="space-y-2 mb-4">
-            {order.order_items.map((item) => (
+            {(order.items || order.order_items || []).map((item: any) => (
               <div key={item.id} className="flex items-center gap-3 text-sm">
                 {item.product_image && (
                   <img src={item.product_image} alt={item.product_name} className="w-12 h-12 rounded-lg object-cover" />

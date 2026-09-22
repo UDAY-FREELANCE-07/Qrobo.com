@@ -1,14 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import type { Database } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api-client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Clock, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
-type Tutorial = Database['public']['Tables']['tutorials']['Row'];
+type Tutorial = any;
 
 export default function LearnPage() {
   const [tutorials, setTutorials] = useState<Tutorial[]>([]);
@@ -16,15 +15,17 @@ export default function LearnPage() {
   const [category, setCategory] = useState('all');
 
   useEffect(() => {
-    supabase
-      .from('tutorials')
-      .select('*')
-      .eq('is_published', true)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        setTutorials(data || []);
+    const load = async () => {
+      try {
+        const data = await apiFetch('/tutorials?is_published=true');
+        setTutorials(data?.items || []);
+      } catch (error) {
+        console.error('Failed to load tutorials', error);
+      } finally {
         setIsLoading(false);
-      });
+      }
+    };
+    load();
   }, []);
 
   const categories = ['all', ...Array.from(new Set(tutorials.map((t) => t.category)))];

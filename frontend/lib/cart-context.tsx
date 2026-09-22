@@ -1,12 +1,13 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import type { Database } from '@/lib/supabase';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useAuth } from '@/lib/auth-context';
+import { apiFetch } from '@/lib/api-client';
 
-type Product = Database['public']['Tables']['products']['Row'];
+type Product = any;
 
 export interface CartItem {
+  id?: string;
   product: Product;
   quantity: number;
 }
@@ -30,39 +31,11 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 const GUEST_CART_KEY = 'qrobo_guest_cart';
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const { user, isLoading: authLoading } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
-  const [user, setUser] = useState<{ id: string } | null>(null);
-
-  useEffect(() => {
-    let mounted = true;
-
-    const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (mounted) setUser(session?.user ? { id: session.user.id } : null);
-    };
-    initAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      (async () => {
-        const newUser = session?.user ? { id: session.user.id } : null;
-        if (mounted) {
-          const oldUser = user;
-          setUser(newUser);
-          if (newUser && !oldUser) {
-            await mergeGuestCart(newUser.id);
-          }
-          await loadCart(newUser);
-        }
-      })();
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
+  const [hasMerged, setHasMerged] = useState(false);
 
   const loadGuestCart = (): CartItem[] => {
     try {
@@ -77,97 +50,65 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(GUEST_CART_KEY, JSON.stringify(cart));
   };
 
-  const loadCart = async (currentUser: { id: string } | null) => {
+  const loadCart = async (currentUser: any) => {
     setIsLoading(true);
     try {
       if (currentUser) {
-        const { data: cart } = await supabase
-          .from('carts')
-          .select('id')
-          .eq('user_id', currentUser.id)
-          .maybeSingle();
-
-        if (!cart) {
-          const { data: newCart } = await supabase
-            .from('carts')
-            .insert({ user_id: currentUser.id })
-            .select('id')
-            .single();
-          if (newCart) {
-            setItems([]);
-          }
-          return;
-        }
-
-        const { data: cartItems } = await supabase
-          .from('cart_items')
-          .select('quantity, product:products(*)')
-          .eq('cart_id', cart.id);
-
-        if (cartItems) {
-          const validItems = (cartItems as any[])
-            .filter((item) => item.product !== null)
-            .map((item) => ({ product: item.product as Product, quantity: item.quantity as number }));
-          setItems(validItems);
+        const res = await apiFetch('/cart');
+        if (res && res.items) {
+          const cartItems = res.items.map((item: any) => ({
+            id: item.id,
+            product: item.product,
+            quantity: item.quantity,
+          }));
+          setItems(cartItems);
+        } else {
+          setItems([]);
         }
       } else {
         setItems(loadGuestCart());
       }
     } catch (error) {
       console.error('Error loading cart:', error);
+      if (!currentUser) setItems(loadGuestCart());
     } finally {
       setIsLoading(false);
     }
   };
 
-  const mergeGuestCart = async (userId: string) => {
+  const mergeGuestCart = async () => {
     const guestCart = loadGuestCart();
     if (guestCart.length === 0) return;
 
-    const { data: cart } = await supabase
-      .from('carts')
-      .select('id')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    let cartId = cart?.id;
-    if (!cartId) {
-      const { data: newCart } = await supabase
-        .from('carts')
-        .insert({ user_id: userId })
-        .select('id')
-        .single();
-      cartId = newCart?.id;
+    try {
+      await apiFetch('/cart/merge', {
+        method: 'POST',
+        body: JSON.stringify({
+          items: guestCart.map(item => ({
+            product_id: item.product.id,
+            quantity: item.quantity
+          }))
+        })
+      });
+      localStorage.removeItem(GUEST_CART_KEY);
+    } catch (error) {
+      console.error('Error merging cart:', error);
     }
-
-    if (!cartId) return;
-
-    for (const item of guestCart) {
-      const { data: existing } = await supabase
-        .from('cart_items')
-        .select('id, quantity')
-        .eq('cart_id', cartId)
-        .eq('product_id', item.product.id)
-        .maybeSingle();
-
-      if (existing) {
-        await supabase
-          .from('cart_items')
-          .update({ quantity: existing.quantity + item.quantity })
-          .eq('id', existing.id);
-      } else {
-        await supabase
-          .from('cart_items')
-          .insert({ cart_id: cartId, product_id: item.product.id, quantity: item.quantity });
-      }
-    }
-
-    localStorage.removeItem(GUEST_CART_KEY);
   };
 
   useEffect(() => {
-    loadCart(user);
-  }, []);
+    if (authLoading) return;
+    
+    const init = async () => {
+      if (user && !hasMerged) {
+        await mergeGuestCart();
+        setHasMerged(true);
+      }
+      await loadCart(user);
+    };
+
+    init();
+  }, [user, authLoading, hasMerged]);
 
   const addItem = async (product: Product, quantity: number = 1) => {
     const existingItem = items.find((i) => i.product.id === product.id);
@@ -178,30 +119,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (user) {
-      const { data: cart } = await supabase
-        .from('carts')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (cart) {
-        const { data: existing } = await supabase
-          .from('cart_items')
-          .select('id, quantity')
-          .eq('cart_id', cart.id)
-          .eq('product_id', product.id)
-          .maybeSingle();
-
-        if (existing) {
-          await supabase
-            .from('cart_items')
-            .update({ quantity: existing.quantity + quantity })
-            .eq('id', existing.id);
-        } else {
-          await supabase
-            .from('cart_items')
-            .insert({ cart_id: cart.id, product_id: product.id, quantity });
-        }
+      try {
+        await apiFetch('/cart/items', {
+          method: 'POST',
+          body: JSON.stringify({ product_id: product.id, quantity })
+        });
+        await loadCart(user); // Reload cart to get actual DB IDs
+      } catch (error) {
+        console.error('Error adding to cart', error);
       }
     } else {
       const guestCart = loadGuestCart();
@@ -212,39 +137,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         guestCart.push({ product, quantity });
       }
       saveGuestCart(guestCart);
+      setItems(guestCart);
     }
-
-    setItems((prev) => {
-      const existing = prev.find((i) => i.product.id === product.id);
-      if (existing) {
-        return prev.map((i) =>
-          i.product.id === product.id ? { ...i, quantity: i.quantity + quantity } : i
-        );
-      }
-      return [...prev, { product, quantity }];
-    });
     setIsOpen(true);
   };
 
   const removeItem = async (productId: string) => {
     if (user) {
-      const { data: cart } = await supabase
-        .from('carts')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (cart) {
-        await supabase
-          .from('cart_items')
-          .delete()
-          .eq('cart_id', cart.id)
-          .eq('product_id', productId);
+      const existingItem = items.find((i) => i.product.id === productId);
+      if (existingItem?.id) {
+        try {
+          await apiFetch(`/cart/items/${existingItem.id}`, {
+            method: 'DELETE'
+          });
+          setItems((prev) => prev.filter((i) => i.product.id !== productId));
+        } catch (error) {
+          console.error('Error removing from cart', error);
+        }
       }
     } else {
       const guestCart = loadGuestCart().filter((i) => i.product.id !== productId);
       saveGuestCart(guestCart);
+      setItems(guestCart);
     }
-    setItems((prev) => prev.filter((i) => i.product.id !== productId));
   };
 
   const updateQuantity = async (productId: string, quantity: number) => {
@@ -257,17 +172,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (product && quantity > product.stock) return;
 
     if (user) {
-      const { data: cart } = await supabase
-        .from('carts')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (cart) {
-        await supabase
-          .from('cart_items')
-          .update({ quantity })
-          .eq('cart_id', cart.id)
-          .eq('product_id', productId);
+      const existingItem = items.find((i) => i.product.id === productId);
+      if (existingItem?.id) {
+        try {
+          await apiFetch(`/cart/items/${existingItem.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ quantity })
+          });
+          setItems((prev) =>
+            prev.map((i) => (i.product.id === productId ? { ...i, quantity } : i))
+          );
+        } catch (error) {
+          console.error('Error updating quantity', error);
+        }
       }
     } else {
       const guestCart = loadGuestCart();
@@ -275,22 +192,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (item) {
         item.quantity = quantity;
         saveGuestCart(guestCart);
+        setItems(guestCart);
       }
     }
-    setItems((prev) =>
-      prev.map((i) => (i.product.id === productId ? { ...i, quantity } : i))
-    );
   };
 
   const clearCart = async () => {
     if (user) {
-      const { data: cart } = await supabase
-        .from('carts')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (cart) {
-        await supabase.from('cart_items').delete().eq('cart_id', cart.id);
+      try {
+        await apiFetch('/cart', {
+          method: 'DELETE'
+        });
+      } catch (error) {
+        console.error('Error clearing cart', error);
       }
     } else {
       localStorage.removeItem(GUEST_CART_KEY);

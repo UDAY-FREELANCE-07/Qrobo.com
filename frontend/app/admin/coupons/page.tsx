@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import type { Database } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +11,7 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { formatPrice } from '@/lib/format';
 import { toast } from 'sonner';
 
-type Coupon = Database['public']['Tables']['coupons']['Row'];
+type Coupon = any;
 
 export default function AdminCouponsPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -20,15 +19,19 @@ export default function AdminCouponsPage() {
   const [editing, setEditing] = useState<Coupon | null>(null);
   const [code, setCode] = useState('');
   const [description, setDescription] = useState('');
-  const [discountType, setDiscountType] = useState('percentage');
+  const [discountType, setDiscountType] = useState('PERCENTAGE');
   const [discountValue, setDiscountValue] = useState('');
   const [minOrderValue, setMinOrderValue] = useState('0');
   const [maxDiscount, setMaxDiscount] = useState('');
   const [usageLimit, setUsageLimit] = useState('');
 
   const load = async () => {
-    const { data } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
-    setCoupons(data || []);
+    try {
+      const data = await apiFetch('/admin/coupons');
+      setCoupons(data || []);
+    } catch (error) {
+      toast.error('Failed to load coupons');
+    }
     setIsLoading(false);
   };
 
@@ -39,29 +42,43 @@ export default function AdminCouponsPage() {
     const data = {
       code: code.toUpperCase(),
       description,
-      discount_type: discountType,
+      discount_type: discountType.toUpperCase(),
       discount_value: parseFloat(discountValue) || 0,
       min_order_value: parseFloat(minOrderValue) || 0,
       max_discount: maxDiscount ? parseFloat(maxDiscount) : null,
       usage_limit: usageLimit ? parseInt(usageLimit) : null,
       is_active: true,
     };
-    if (editing) {
-      await supabase.from('coupons').update(data).eq('id', editing.id);
-      toast.success('Coupon updated');
-    } else {
-      await supabase.from('coupons').insert(data);
-      toast.success('Coupon created');
+    try {
+      if (editing) {
+        await apiFetch(`/admin/coupons/${editing.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(data)
+        });
+        toast.success('Coupon updated');
+      } else {
+        await apiFetch('/admin/coupons', {
+          method: 'POST',
+          body: JSON.stringify(data)
+        });
+        toast.success('Coupon created');
+      }
+      setEditing(null); setCode(''); setDescription(''); setDiscountValue(''); setMaxDiscount(''); setUsageLimit('');
+      load();
+    } catch (error) {
+      toast.error(editing ? 'Failed to update' : 'Failed to create');
     }
-    setEditing(null); setCode(''); setDescription(''); setDiscountValue(''); setMaxDiscount(''); setUsageLimit('');
-    load();
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this coupon?')) return;
-    await supabase.from('coupons').delete().eq('id', id);
-    toast.success('Coupon deleted');
-    load();
+    try {
+      await apiFetch(`/admin/coupons/${id}`, { method: 'DELETE' });
+      toast.success('Coupon deleted');
+      load();
+    } catch (error) {
+      toast.error('Failed to delete coupon');
+    }
   };
 
   return (
@@ -78,12 +95,12 @@ export default function AdminCouponsPage() {
               <Select value={discountType} onValueChange={setDiscountType}>
                 <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="percentage">Percentage</SelectItem>
-                  <SelectItem value="fixed">Fixed Amount</SelectItem>
+                  <SelectItem value="PERCENTAGE">Percentage</SelectItem>
+                  <SelectItem value="FIXED">Fixed Amount</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div><Label htmlFor="discountValue">Discount Value {discountType === 'percentage' ? '(%)' : '(Rs)'}</Label><Input id="discountValue" type="number" step="0.01" value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} required className="mt-1" /></div>
+            <div><Label htmlFor="discountValue">Discount Value {discountType === 'PERCENTAGE' ? '(%)' : '(Rs)'}</Label><Input id="discountValue" type="number" step="0.01" value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} required className="mt-1" /></div>
             <div><Label htmlFor="minOrderValue">Min Order Value</Label><Input id="minOrderValue" type="number" value={minOrderValue} onChange={(e) => setMinOrderValue(e.target.value)} className="mt-1" /></div>
             <div><Label htmlFor="maxDiscount">Max Discount (optional)</Label><Input id="maxDiscount" type="number" value={maxDiscount} onChange={(e) => setMaxDiscount(e.target.value)} className="mt-1" /></div>
             <div><Label htmlFor="usageLimit">Usage Limit (optional)</Label><Input id="usageLimit" type="number" value={usageLimit} onChange={(e) => setUsageLimit(e.target.value)} className="mt-1" /></div>
@@ -102,7 +119,7 @@ export default function AdminCouponsPage() {
                   <TableRow key={coupon.id}>
                     <TableCell className="text-sm font-bold text-navy">{coupon.code}</TableCell>
                     <TableCell className="text-sm text-muted-foreground capitalize">{coupon.discount_type}</TableCell>
-                    <TableCell className="text-sm text-navy">{coupon.discount_type === 'percentage' ? `${coupon.discount_value}%` : formatPrice(coupon.discount_value)}</TableCell>
+                    <TableCell className="text-sm text-navy">{coupon.discount_type === 'PERCENTAGE' ? `${coupon.discount_value}%` : formatPrice(coupon.discount_value)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{formatPrice(coupon.min_order_value)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{coupon.used_count}/{coupon.usage_limit || '∞'}</TableCell>
                     <TableCell>

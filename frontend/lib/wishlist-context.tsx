@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth-context';
 
 interface WishlistContextType {
@@ -16,7 +16,7 @@ const WishlistContext = createContext<WishlistContextType | undefined>(undefined
 const GUEST_WISHLIST_KEY = 'qrobo_guest_wishlist';
 
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [wishlistIds, setWishlistIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -33,11 +33,9 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       if (user) {
-        const { data } = await supabase
-          .from('wishlists')
-          .select('product_id')
-          .eq('user_id', user.id);
-        setWishlistIds(data?.map((w) => w.product_id) ?? []);
+        const data = await apiFetch('/wishlist');
+        // data.items array of { product_id }
+        setWishlistIds(data?.items?.map((w: any) => w.product_id) ?? []);
       } else {
         setWishlistIds(loadGuestWishlist());
       }
@@ -49,23 +47,28 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (!authLoading) {
+      refresh();
+    }
+  }, [refresh, authLoading]);
 
   const toggle = async (productId: string) => {
     const isWishlisted = wishlistIds.includes(productId);
 
     if (user) {
-      if (isWishlisted) {
-        await supabase
-          .from('wishlists')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('product_id', productId);
-      } else {
-        await supabase
-          .from('wishlists')
-          .insert({ user_id: user.id, product_id: productId });
+      try {
+        if (isWishlisted) {
+          await apiFetch(`/wishlist/items/${productId}`, {
+            method: 'DELETE'
+          });
+        } else {
+          await apiFetch('/wishlist/items', {
+            method: 'POST',
+            body: JSON.stringify({ product_id: productId })
+          });
+        }
+      } catch (error) {
+        console.error('Failed to toggle wishlist', error);
       }
     } else {
       const guest = loadGuestWishlist();

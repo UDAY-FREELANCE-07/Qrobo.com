@@ -1,29 +1,26 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import type { Database } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api-client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
-type Profile = Database['public']['Tables']['profiles']['Row'];
+type Profile = any;
 
 export default function AdminCustomersPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [orderCounts, setOrderCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
-      const [profRes, ordersRes] = await Promise.all([
-        supabase.from('profiles').select('*').order('created_at', { ascending: false }),
-        supabase.from('orders').select('user_id'),
-      ]);
-      setProfiles(profRes.data || []);
-      const counts: Record<string, number> = {};
-      (ordersRes.data || []).forEach((o: any) => { counts[o.user_id] = (counts[o.user_id] || 0) + 1; });
-      setOrderCounts(counts);
+      try {
+        const data = await apiFetch('/admin/customers?limit=100');
+        setProfiles(data?.items || []);
+      } catch (error) {
+        toast.error('Failed to load customers');
+      }
       setIsLoading(false);
     };
     load();
@@ -47,14 +44,14 @@ export default function AdminCustomersPage() {
             <TableBody>
               {profiles.map((profile) => (
                 <TableRow key={profile.id}>
-                  <TableCell className="text-sm font-medium text-navy">{profile.full_name || 'N/A'}</TableCell>
+                  <TableCell className="text-sm font-medium text-navy">{profile.full_name || profile.email}</TableCell>
                   <TableCell>
-                    <span className={cn('text-xs px-2 py-1 rounded-full', profile.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600')}>
+                    <span className={cn('text-xs px-2 py-1 rounded-full', profile.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600')}>
                       {profile.role}
                     </span>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">{profile.phone || '-'}</TableCell>
-                  <TableCell className="text-sm font-medium text-navy">{orderCounts[profile.id] || 0}</TableCell>
+                  <TableCell className="text-sm font-medium text-navy">{profile._count?.orders || 0}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{formatDate(profile.created_at)}</TableCell>
                 </TableRow>
               ))}

@@ -11,6 +11,8 @@ router.post('/refresh', authController.refresh);
 
 // Protected routes
 router.get('/me', authenticate, authController.me);
+router.put('/profile', authenticate, authController.updateProfile);
+router.put('/password', authenticate, authController.updatePassword);
 
 // Example admin route for testing
 router.get('/admin-only', authenticate, authorize('ADMIN'), (req, res) => {

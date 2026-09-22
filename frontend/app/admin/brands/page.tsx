@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import type { Database } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-type Brand = Database['public']['Tables']['brands']['Row'];
+type Brand = any;
 
 export default function AdminBrandsPage() {
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -21,8 +20,12 @@ export default function AdminBrandsPage() {
   const [country, setCountry] = useState('');
 
   const load = async () => {
-    const { data } = await supabase.from('brands').select('*').order('name');
-    setBrands(data || []);
+    try {
+      const data = await apiFetch('/admin/brands');
+      setBrands(data || []);
+    } catch (error) {
+      toast.error('Failed to load brands');
+    }
     setIsLoading(false);
   };
 
@@ -31,22 +34,36 @@ export default function AdminBrandsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const data = { name, slug: slug || name.toLowerCase().replace(/\s+/g, '-'), country };
-    if (editing) {
-      await supabase.from('brands').update(data).eq('id', editing.id);
-      toast.success('Brand updated');
-    } else {
-      await supabase.from('brands').insert(data);
-      toast.success('Brand created');
+    try {
+      if (editing) {
+        await apiFetch(`/admin/brands/${editing.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(data)
+        });
+        toast.success('Brand updated');
+      } else {
+        await apiFetch('/admin/brands', {
+          method: 'POST',
+          body: JSON.stringify(data)
+        });
+        toast.success('Brand created');
+      }
+      setEditing(null); setName(''); setSlug(''); setCountry('');
+      load();
+    } catch (error) {
+      toast.error(editing ? 'Failed to update' : 'Failed to create');
     }
-    setEditing(null); setName(''); setSlug(''); setCountry('');
-    load();
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this brand?')) return;
-    const { error } = await supabase.from('brands').delete().eq('id', id);
-    if (error) { toast.error('Cannot delete - products may reference this brand'); }
-    else { toast.success('Brand deleted'); load(); }
+    try {
+      await apiFetch(`/admin/brands/${id}`, { method: 'DELETE' });
+      toast.success('Brand deleted');
+      load();
+    } catch (error) {
+      toast.error('Cannot delete - products may reference this brand');
+    }
   };
 
   return (

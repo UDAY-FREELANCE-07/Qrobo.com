@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatPrice } from '@/lib/format';
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api-client';
 import { toast } from 'sonner';
 
 export default function CartPage() {
@@ -22,12 +22,8 @@ export default function CartPage() {
 
   const applyCoupon = async () => {
     if (!couponCode.trim()) return;
-    const { data: coupon } = await supabase
-      .from('coupons')
-      .select('*')
-      .eq('code', couponCode.toUpperCase())
-      .eq('is_active', true)
-      .maybeSingle();
+    try {
+      const coupon = await apiFetch(`/coupons/validate?code=${couponCode.toUpperCase()}`);
 
     if (!coupon) {
       toast.error('Invalid coupon code');
@@ -54,6 +50,9 @@ export default function CartPage() {
     setDiscount(discountAmount);
     setCouponApplied(true);
     toast.success(`Coupon applied! You saved ${formatPrice(discountAmount)}`);
+    } catch (error) {
+      toast.error('Invalid or expired coupon code');
+    }
   };
 
   if (items.length === 0) {
