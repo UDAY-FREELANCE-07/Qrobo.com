@@ -12,10 +12,10 @@ const app = express();
 // Security Middleware
 app.use(helmet());
 
-// CORS configuration - only allow requests from FRONTEND_URL
+// CORS configuration
 app.use(
   cors({
-    origin: env.FRONTEND_URL,
+    origin: env.FRONTEND_URL || 'http://localhost:3000', // Fallback for local development
     credentials: true,
   })
 );

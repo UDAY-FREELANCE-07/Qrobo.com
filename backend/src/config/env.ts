@@ -17,7 +17,7 @@ const envSchema = z.object({
   // AWS_SECRET_ACCESS_KEY: z.string().optional(),
   // AWS_REGION: z.string().optional(),
   // AWS_S3_BUCKET: z.string().optional(),
-  // FRONTEND_URL: z.string().url().optional(),
+  FRONTEND_URL: z.string().url().optional(),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 });
 
