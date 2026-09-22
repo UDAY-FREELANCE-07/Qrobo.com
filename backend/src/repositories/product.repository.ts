@@ -97,3 +97,36 @@ export const findProductById = async (id: string) => {
     },
   });
 };
+
+// UUID regex — same pattern used by PostgreSQL uuid type
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Fetches a published product by either its UUID id or its slug.
+ * Detection: if the identifier matches UUID format → query by id.
+ *            otherwise → query by slug.
+ * Returns null when no product is found (caller throws NOT_FOUND).
+ */
+export const findProductByIdentifier = async (identifier: string) => {
+  const isUuid = UUID_REGEX.test(identifier);
+
+  return prisma.product.findFirst({
+    where: isUuid
+      ? { id: identifier, is_published: true }
+      : { slug: identifier, is_published: true },
+    include: {
+      category: { select: { id: true, name: true, slug: true } },
+      brand: { select: { id: true, name: true, slug: true } },
+      deal: {
+        where: { is_active: true, starts_at: { lte: new Date() }, ends_at: { gte: new Date() } }
+      },
+      reviews: {
+        where: { is_approved: true },
+        take: 5,
+        orderBy: { created_at: 'desc' },
+        include: { user: { select: { full_name: true, avatar_url: true } } }
+      }
+    },
+  });
+};
+

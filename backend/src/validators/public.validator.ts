@@ -9,6 +9,21 @@ export const idParamSchema = z.object({
   id: z.string().uuid('Invalid ID format'),
 });
 
+// Accepts either a UUID (product id) or a slug (e.g. yantrax-arduino-starter-kit).
+// Detection is done at the service/repository layer — not here — so we just
+// validate that the value is a non-empty string with valid identifier characters.
+export const identifierParamSchema = z.object({
+  identifier: z
+    .string()
+    .min(1, 'Identifier is required')
+    .regex(
+      /^[a-zA-Z0-9_-]+$/,
+      'Identifier must be a UUID or a slug (letters, numbers, hyphens, underscores)'
+    ),
+});
+
+export type IdentifierParam = z.infer<typeof identifierParamSchema>;
+
 export const productQuerySchema = paginationSchema.extend({
   search: z.string().optional(),
   category_id: z.string().uuid().optional(),

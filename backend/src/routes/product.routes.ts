@@ -4,6 +4,9 @@ import * as productController from '../controllers/product.controller';
 const router = Router();
 
 router.get('/', productController.getProducts);
-router.get('/:id', productController.getProductById);
+
+// Accepts either a UUID (id) or a slug — detection handled in repository
+router.get('/:identifier', productController.getProductByIdentifier);
 
 export default router;
+

@@ -16,3 +16,16 @@ export const getProductById = async (id: string) => {
   }
   return product;
 };
+
+/**
+ * Fetches a product by UUID id or slug.
+ * The repository handles the UUID-vs-slug detection.
+ */
+export const getProductByIdentifier = async (identifier: string) => {
+  const product = await productRepository.findProductByIdentifier(identifier);
+  if (!product) {
+    throw new AppError('Product not found', 404, 'NOT_FOUND');
+  }
+  return product;
+};
+
