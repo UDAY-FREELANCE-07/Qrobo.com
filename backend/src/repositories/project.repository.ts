@@ -41,13 +41,6 @@ export const findProjectById = async (id: string) => {
     where: { 
       id,
       is_published: true,
-    },
-    include: {
-      components: {
-        include: {
-          product: { select: { id: true, name: true, slug: true, primary_image: true, price: true } }
-        }
-      }
     }
   });
 };
