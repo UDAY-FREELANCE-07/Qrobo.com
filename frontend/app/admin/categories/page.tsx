@@ -23,7 +23,7 @@ export default function AdminCategoriesPage() {
   const load = async () => {
     try {
       const data = await apiFetch('/admin/categories');
-      setCategories(data || []);
+      setCategories(data?.items || []);
     } catch (error) {
       toast.error('Failed to load categories');
     }

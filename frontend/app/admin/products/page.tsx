@@ -36,8 +36,8 @@ export default function AdminProductsPage() {
         apiFetch('/admin/brands'),
       ]);
       setProducts(prodRes?.items || []);
-      setCategories(catRes || []);
-      setBrands(brandRes || []);
+      setCategories(catRes?.items || []);
+      setBrands(brandRes?.items || []);
     } catch (error) {
       console.error(error);
       toast.error('Failed to load data');

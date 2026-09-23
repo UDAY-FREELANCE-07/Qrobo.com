@@ -6,7 +6,7 @@ import { apiFetch } from '@/lib/api-client';
 interface User {
   id: string;
   email: string;
-  full_name: string | null;
+  full_name: string | null; // normalized from backend 'name' field
   role: string;
   phone: string | null;
   avatar_url?: string | null;
@@ -31,7 +31,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchUser = useCallback(async () => {
     try {
       const data = await apiFetch('/auth/me');
-      setUser(data.user);
+      // Backend returns { user: { id, name, email, role } } — normalize 'name' → 'full_name'
+      if (data?.user) {
+        setUser({
+          ...data.user,
+          full_name: data.user.full_name ?? data.user.name ?? null,
+        });
+      } else {
+        setUser(null);
+      }
     } catch (error) {
       setUser(null);
     } finally {

@@ -28,7 +28,7 @@ export default function AdminCouponsPage() {
   const load = async () => {
     try {
       const data = await apiFetch('/admin/coupons');
-      setCoupons(data || []);
+      setCoupons(data?.items || []);
     } catch (error) {
       toast.error('Failed to load coupons');
     }

@@ -22,7 +22,7 @@ export default function AdminBrandsPage() {
   const load = async () => {
     try {
       const data = await apiFetch('/admin/brands');
-      setBrands(data || []);
+      setBrands(data?.items || []);
     } catch (error) {
       toast.error('Failed to load brands');
     }
